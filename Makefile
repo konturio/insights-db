@@ -12,7 +12,7 @@ insights_tasks_loop:
 
 .PHONY: calculate_geometry_loop
 calculate_geometry_loop:
-	while true; do make calculate_geometry; sleep 12h; done
+	while true; do make calculate_geometry; sleep 5m; done
 	touch $@
 
 .PHONY: calculate_geometry
@@ -23,7 +23,7 @@ calculate_geometry:
 
 .PHONY: remove_outated_indicators_loop
 remove_outated_indicators_loop:
-	while true; do make remove_outated_indicators; sleep 1h; done
+	while true; do make remove_outated_indicators; sleep 5m; done
 	touch $@
 
 .PHONY: remove_outated_indicators
