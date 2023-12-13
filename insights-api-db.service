@@ -1,0 +1,10 @@
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+
+WorkingDirectory=%h/current
+ExecStart=/bin/bash start.sh
+
+[Install]
+WantedBy=default.target

@@ -17,3 +17,8 @@ insights-api-db has no its own database. It uses Insights API database: test, de
 ## Directory and files structure
 
 TBD
+
+## Check if etl process running
+```
+systemctl --user status insights-api-db.service
+```
