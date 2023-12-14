@@ -28,9 +28,7 @@ remove_outated_indicators_loop:
 
 .PHONY: remove_outated_indicators
 remove_outated_indicators:
-	psql -c "delete from bivariate_indicators_metadata where state = 'OUTDATED'"
-	# due to FK constraint outdated indicators will also be removed from
-	# bivariate_axis_correlation_v2, bivariate_axis_overrides, bivariate_axis_v2
+	psql -1 -f scripts/remove_outated_indicators.sql
 	touch $@
 
 .PHONY: clean
