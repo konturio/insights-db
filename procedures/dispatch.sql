@@ -21,12 +21,14 @@ begin
         when 'quality' then
           call direct_quality_estimation(x_num, x_den);
         when 'stops' then
-          raise notice 'calculating stops';
-          -- call axis_stops_estimation(x_num, x_den);
+          call axis_stops_estimation(x_num, x_den);
         when 'analytics' then
-          raise notice 'calculating analytics';
+          call bivariate_axis_analytics(x_num, x_den);
+        when 'overrides' then
+          call apply_bivariate_axis_overrides(x_num, x_den);
         when 'correlations' then
           raise notice 'calculating correlations';
+          -- TODO
         else
           raise notice 'unknown task type';
     end case;

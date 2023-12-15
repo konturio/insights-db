@@ -8,6 +8,10 @@ all: calculate_geometry_loop remove_outated_indicators_loop insights_tasks_loop
 insights_tasks_loop:
 	psql -f procedures/dispatch.sql
 	psql -f procedures/direct_quality_estimation.sql
+	psql -f procedures/16269_bivariate_axis_analytics.sql
+	psql -f procedures/apply_bivariate_axis_overrides.sql
+	psql -f procedures/axis_stops_estimation.sql
+
 	while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -n0 "psql -q -c 'call dispatch()'"; sleep 1; done
 
 .PHONY: calculate_geometry_loop
