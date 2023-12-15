@@ -19,12 +19,14 @@ begin
 
     case
         when task = 'quality' then
-          raise notice 'calculating quality';
-          -- call direct_quality_estimation(x_num, x_den)
+          call direct_quality_estimation(x_num, x_den);
         when task = 'stops' then
           raise notice 'calculating stops';
-          -- call axis_stops_estimation(x_num, x_den)
-        -- TODO: add more types
+          -- call axis_stops_estimation(x_num, x_den);
+        when task = 'analytics' then
+          raise notice 'calculating analytics';
+        when task = 'correlations' then
+          raise notice 'calculating correlations';
         else
           raise notice 'unknown task type';
     end case;
