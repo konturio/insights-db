@@ -17,15 +17,15 @@ begin
     for update skip locked
     limit 1;
 
-    case
-        when task = 'quality' then
+    case task
+        when 'quality' then
           call direct_quality_estimation(x_num, x_den);
-        when task = 'stops' then
+        when 'stops' then
           raise notice 'calculating stops';
           -- call axis_stops_estimation(x_num, x_den);
-        when task = 'analytics' then
+        when 'analytics' then
           raise notice 'calculating analytics';
-        when task = 'correlations' then
+        when 'correlations' then
           raise notice 'calculating correlations';
         else
           raise notice 'unknown task type';

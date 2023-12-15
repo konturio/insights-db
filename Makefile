@@ -6,9 +6,9 @@ all: calculate_geometry_loop remove_outated_indicators_loop insights_tasks_loop
 
 .PHONY: insights_tasks_loop
 insights_tasks_loop:
-	psql -U postgres -f procedures/dispatch.sql
-	psql -U postgres -f procedures/direct_quality_estimation.sql
-	while true; do seq `psql -U postgres -c 'select count(0) from task_queue' -t` | parallel -n0 "psql -q -U postgres -c 'call dispatch()'"; sleep 1; done
+	psql -f procedures/dispatch.sql
+	psql -f procedures/direct_quality_estimation.sql
+	while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -n0 "psql -q -c 'call dispatch()'"; sleep 1; done
 
 .PHONY: calculate_geometry_loop
 calculate_geometry_loop:
@@ -25,4 +25,4 @@ remove_outated_indicators_loop:
 
 .PHONY: remove_outated_indicators
 remove_outated_indicators:
-	psql -U postgres -1 -f scripts/remove_outated_indicators.sql
+	psql -1 -f scripts/remove_outated_indicators.sql
