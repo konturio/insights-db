@@ -6,8 +6,8 @@ all: calculate_geometry_loop remove_outated_indicators_loop insights_tasks_loop
 
 .PHONY: insights_tasks_loop
 insights_tasks_loop:
-	# TODO 17429: Implement core dispatcher to process calculation tasks
-	echo insights_tasks_loop
+	psql -f procedures/dispatch.sql
+	while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -n0 "psql -c 'call dispatch()'"; sleep 1; done
 
 .PHONY: calculate_geometry_loop
 calculate_geometry_loop:
