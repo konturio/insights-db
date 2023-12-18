@@ -27,8 +27,7 @@ begin
         when 'overrides' then
           call apply_bivariate_axis_overrides(x_num, x_den);
         when 'correlations' then
-          raise notice 'calculating correlations';
-          -- TODO
+          call update_correlation(x_num, x_den, y_num, y_den);
         else
           raise notice 'unknown task type';
     end case;
