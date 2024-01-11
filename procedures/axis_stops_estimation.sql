@@ -5,6 +5,7 @@ create or replace procedure axis_stops_estimation(x_numerator_uuid uuid, x_denom
 as
 $$
 begin
+    -- TODO 17318: it's possible to skip some calculations if we check what's in bivariate_axis_overrides
     update bivariate_axis_v2 ba
     set min = c.min,
         p25 = c.p25,
@@ -25,7 +26,5 @@ begin
     ) c
     where ba.numerator_uuid = x_numerator_uuid
         and ba.denominator_uuid = x_denominator_uuid;
-
-    call apply_bivariate_axis_overrides(x_numerator_uuid, x_denominator_uuid);
 end;
 $$;

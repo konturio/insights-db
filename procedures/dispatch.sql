@@ -24,8 +24,6 @@ begin
           call axis_stops_estimation(x_num, x_den);
         when 'analytics' then
           call bivariate_axis_analytics(x_num, x_den);
-        when 'overrides' then
-          call apply_bivariate_axis_overrides(x_num, x_den);
         when 'correlations' then
           call update_correlation(x_num, x_den, y_num, y_den);
         else
