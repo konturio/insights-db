@@ -20,7 +20,7 @@ task_scheduler:
 	# 1. creates entries in bivariate_axis_v2 & bivariate_axis_correlation_v2 tables
 	# 2. creates tasks in task_queue table
 	# 3. updates state of indicators in bivariate_indicators_metadata table
-	while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; psql -1 -f scripts/create_correlation_tasks.sql -f scripts/update_indicators_state.sql; sleep 1m; done
+	while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; psql -1 -c "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -f scripts/create_correlation_tasks.sql -f scripts/update_indicators_state.sql; sleep 1m; done
 
 .PHONY: apply_overrides_loop
 apply_overrides_loop:
