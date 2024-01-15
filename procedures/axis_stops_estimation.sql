@@ -6,7 +6,7 @@ as
 $$
 begin
     -- skip percentile calculations if there's overrides for min, p25, p75, max
-    if exists (select 1 from bivariate_axis_overrides
+    if exists (select from bivariate_axis_overrides
                where numerator_id = x_numerator_uuid
                  and denominator_id = x_denominator_uuid
                  and min is not null
