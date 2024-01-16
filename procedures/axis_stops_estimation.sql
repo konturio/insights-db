@@ -2,6 +2,8 @@ drop procedure if exists axis_stops_estimation;
 
 create or replace procedure axis_stops_estimation(x_numerator_uuid uuid, x_denominator_uuid uuid)
     language plpgsql
+    -- increased work mem helps planner to prefer bitmap index scan over seq scan
+    set work_mem = '10GB'
 as
 $$
 begin
@@ -15,9 +17,6 @@ begin
                  and max is not null) then
         return;
     end if;
-
-    -- increased work mem helps planner to prefer bitmap index scan over seq scan
-    set work_mem = '10GB';
 
     update bivariate_axis_v2 ba
     set min = floor(c.percentiles[1]),
