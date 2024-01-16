@@ -2,10 +2,10 @@ drop procedure if exists direct_quality_estimation;
 
 create or replace procedure direct_quality_estimation(x_numerator_uuid uuid, x_denominator_uuid uuid)
     language plpgsql
+    set work_mem = '10GB'
 as
 $$
 begin
-    set work_mem = '10GB';
     -- 1. for hexagons of resolution 1..5 group values by common parent hexagon and calculate the average inside a parent
     with averages as (select h3_cell_to_parent(h3) as h3_parent,
                              indicator_uuid        as indicator_uuid,
