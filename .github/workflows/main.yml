@@ -18,13 +18,6 @@ jobs:
         run: |-
           echo "::set-output name=SHA::$(git log -1 --format='%h')"
 
-      - name: Uploading build artifacts
-        uses: actions/upload-artifact@v3.1.0
-        if: always()
-        with:
-          name: 'insights-api-db-svc-${{outputs.CI_COMMIT_REF_SLUG}}'
-          path: dist.tar.xz
-
       - name: Logging into Nexus Container Registry
         uses: docker/login-action@v2
         with:
