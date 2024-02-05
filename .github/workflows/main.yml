@@ -1,0 +1,55 @@
+---
+
+name: 01 Build
+
+on:
+  push:
+    branches:
+    - '**'
+
+jobs:
+  gradle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Extracting metadata from a cloned repository
+        id: get-cloned
+        run: |-
+          echo "::set-output name=SHA::$(git log -1 --format='%h')"
+
+      - name: Uploading build artifacts
+        uses: actions/upload-artifact@v3.1.0
+        if: always()
+        with:
+          name: 'insights-api-db-svc-${{outputs.CI_COMMIT_REF_SLUG}}'
+          path: dist.tar.xz
+
+      - name: Logging into Nexus Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: nexus.kontur.io:8085
+          username: ${{ secrets.NEXUS_DEPLOYER }}
+          password: ${{ secrets.NEXUS_DEPLOYER_PASS }}
+
+      - name: Extracting Docker metadata
+        uses: docker/metadata-action@v4.0.1
+        id: meta
+        with:
+          images: nexus.kontur.io:8085/konturdev/insights-api-db-svc
+          tags: |
+            type=raw,value=${{ github.ref_name }}.{{sha}}.${{ github.run_attempt }}
+
+      - name: Building and pushing Docker image
+        uses: docker/build-push-action@v3.0.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Add image tag to step summary
+        env:
+          IMAGE_TAG: ${{ github.ref_name }}.${{ steps.get-cloned.outputs.SHA }}.${{ github.run_attempt }}
+        run: |-
+          echo "<h3>Docker image tag</h3> $IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
