@@ -7,6 +7,8 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-k
 RUN apt-get update && apt-get install -y postgresql-client-16 make parallel
 
 COPY Makefile Makefile
+COPY scripts scripts
+COPY procedures procedures
 COPY start.sh start.sh
 
 RUN chmod +x start.sh
