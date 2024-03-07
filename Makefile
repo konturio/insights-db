@@ -6,14 +6,15 @@ all: task_scheduler calculate_geometry_loop remove_outated_indicators_loop insig
 
 .PHONY: insights_tasks_loop
 insights_tasks_loop:
-	psql -f procedures/dispatch.sql
-	psql -f procedures/direct_quality_estimation.sql
-	psql -f procedures/16269_bivariate_axis_analytics.sql
-	psql -f procedures/apply_bivariate_axis_overrides.sql
-	psql -f procedures/axis_stops_estimation.sql
-	psql -f procedures/bivariate_axis_correlation.sql
+	# create stored procedures
+	psql -qf procedures/dispatch.sql
+	psql -qf procedures/direct_quality_estimation.sql
+	psql -qf procedures/16269_bivariate_axis_analytics.sql
+	psql -qf procedures/apply_bivariate_axis_overrides.sql
+	psql -qf procedures/axis_stops_estimation.sql
+	psql -qf procedures/bivariate_axis_correlation.sql
 
-	while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -n0 "psql -q -c 'call dispatch()'"; sleep 1; done
+	while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -j 3 -n0 "psql -q -c 'call dispatch()'"; sleep 1; done
 
 .PHONY: task_scheduler
 task_scheduler:

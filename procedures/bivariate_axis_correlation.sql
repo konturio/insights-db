@@ -15,7 +15,7 @@ begin
 
     -- find valid permutations of indicators
     create temp table to_correlate as
-    select * from (values
+    select distinct * from (values
         -- corr(A,C) with all permutations of denominators
         (A, B, C, D),
         (A, D, C, B),
@@ -42,11 +42,6 @@ begin
         -- correlation for all tuples is calculated, nothing to do
         return;
     end if;
-
-    -- find distinct uuids from all rows & cols
-    select into distinct_indicators array_agg(x) from (
-        select distinct unnest(array[x_num, x_den, y_num, y_den]) x from to_correlate
-    );
 
     -- compose corr() expressions for all to_correlate rows
     select into corr_sql string_agg(
@@ -82,7 +77,7 @@ begin
     join (select *, row_number() over () as row_num from result_col)
     using(row_num)
     -- add symmetric values: corr(x,y) = corr(y,x)
-    union all
+    union
     select y_num, y_den, x_num, x_den, correlation
     from (select *, row_number() over () as row_num from to_correlate)
     join (select *, row_number() over () as row_num from result_col)

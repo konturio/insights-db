@@ -16,6 +16,7 @@ with new_corr_axis as (
         -- select unique 4-tuples of indicators.
         -- we'll calculate all permutations inside correlation task
         and (a.numerator_uuid < b.numerator_uuid or mb.is_base)
+        and (a.denominator_uuid < b.denominator_uuid)
     except
     select x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
     from bivariate_axis_correlation_v2
