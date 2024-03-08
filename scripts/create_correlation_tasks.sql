@@ -27,5 +27,5 @@ select
     end,
     'correlations',
     x_numerator_uuid, x_denominator_uuid, y_numerator_uuid, y_denominator_uuid
-from new_corr_axis;
--- TODO: on conflict do nothing - check unique constraint in task_queue (not exists currently)
+from new_corr_axis
+on conflict do nothing;
