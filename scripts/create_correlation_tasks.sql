@@ -5,11 +5,9 @@ with new_corr_axis as (
         b.numerator_uuid y_numerator_uuid,      -- may be base or not base
         b.denominator_uuid y_denominator_uuid   -- base
     from bivariate_axis_v2 a
-        join bivariate_indicators_metadata ma
-            on (a.numerator_uuid = ma.internal_id and not ma.is_base),
+        join bivariate_indicators_metadata m
+            on (a.numerator_uuid = m.internal_id and not m.is_base),
         bivariate_axis_v2 b
-        join bivariate_indicators_metadata mb
-            on (b.numerator_uuid = mb.internal_id)
     where
             a.quality > .5
         and b.quality > .5
