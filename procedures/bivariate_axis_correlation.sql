@@ -13,30 +13,23 @@ begin
     drop table if exists corr_results;
     drop table if exists result_col;
 
-    -- find valid permutations of indicators
     create temp table to_correlate as
-    select distinct * from (values
-        -- corr(A,C) with all permutations of denominators
-        (A, B, C, D),
-        (A, D, C, B),
-        (A, B, C, B),
-        (A, D, C, D),
-
-        -- permutations of base indicators with a
-        (A, B, B, D),
-        (A, B, D, B),
-        (A, D, B, D),
-        (A, D, D, B),
-
-        -- permutations of base indicators with c
-        (C, B, B, D),
-        (C, B, D, B),
-        (C, D, B, D),
-        (C, D, D, B)
-    ) as t (x_num, x_den, y_num, y_den)
-    except
-    select x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
-    from bivariate_axis_correlation_v2;
+    with letters as (
+        select unnest(ARRAY[A, B, C, D]) l
+    ),
+    permutations as (
+        select distinct a.l x_num, b.l x_den, c.l y_num, d.l y_den
+        from letters a, letters b, letters c, letters d
+    )
+    select ctid task_id, x_numerator_id x_num, x_denominator_id x_den, y_numerator_id y_num, y_denominator_id y_den
+    from task_queue
+    where
+        task_type = 'correlations' and
+        exists (
+            select from permutations
+            where x_numerator_id = x_num and x_denominator_id = x_den and y_numerator_id = y_num and y_denominator_id = y_den
+        )
+    for update skip locked;
 
     if not exists (select from to_correlate) then
         -- correlation for all tuples is calculated, nothing to do
@@ -75,12 +68,12 @@ begin
     select x_num, x_den, y_num, y_den, correlation
     from (select *, row_number() over () as row_num from to_correlate)
     join (select *, row_number() over () as row_num from result_col)
-    using(row_num)
-    -- add symmetric values: corr(x,y) = corr(y,x)
-    union
-    select y_num, y_den, x_num, x_den, correlation
-    from (select *, row_number() over () as row_num from to_correlate)
-    join (select *, row_number() over () as row_num from result_col)
+--    using(row_num)
+--    -- add symmetric values: corr(x,y) = corr(y,x)
+--    union
+--    select y_num, y_den, x_num, x_den, correlation
+--    from (select *, row_number() over () as row_num from to_correlate)
+--    join (select *, row_number() over () as row_num from result_col)
     using(row_num);
 
     -- apply results to the bivariate_axis_correlation_v2 table
@@ -98,5 +91,7 @@ begin
         correlation = excluded.correlation,
         quality = excluded.quality;
     
+    delete from task_queue
+    where ctid in (select task_id from to_correlate);
 end;
 $$;

@@ -13,10 +13,7 @@ with new_corr_axis as (
     where
             a.quality > .5
         and b.quality > .5
-        -- select unique 4-tuples of indicators.
-        -- we'll calculate all permutations inside correlation task
-        and (a.numerator_uuid < b.numerator_uuid or mb.is_base)
-        and (a.denominator_uuid < b.denominator_uuid)
+        and a.numerator_uuid != b.numerator_uuid
     except
     select x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
     from bivariate_axis_correlation_v2
@@ -24,6 +21,13 @@ with new_corr_axis as (
 
 insert into task_queue
     (priority, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id)
-select 4, 'correlations', x_numerator_uuid, x_denominator_uuid, y_numerator_uuid, y_denominator_uuid
+select
+    case
+        when x_denominator_uuid = y_numerator_uuid or x_denominator_uuid = y_denominator_uuid
+        then 10 -- set low priority for tasks with repeating UUIDs: we can catch them while calculating other tasks
+        else 4
+    end,
+    'correlations',
+    x_numerator_uuid, x_denominator_uuid, y_numerator_uuid, y_denominator_uuid
 from new_corr_axis;
 -- TODO: on conflict do nothing - check unique constraint in task_queue (not exists currently)
