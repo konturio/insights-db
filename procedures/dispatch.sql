@@ -18,6 +18,11 @@ begin
     for update skip locked
     limit 1;
 
+    if task_id is null then
+        -- no tasks left, exit
+        return;
+    end if;
+
     raise notice 'start % task tid=% for %, %, %, %', task, task_id, x_num, x_den, y_num, y_den;
     case task
         when 'quality' then

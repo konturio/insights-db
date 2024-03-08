@@ -9,11 +9,12 @@ $$
 declare
     corr_sql text;
 begin
+    drop table if exists tasks;
     drop table if exists to_correlate;
     drop table if exists corr_results;
     drop table if exists result_col;
 
-    create temp table to_correlate as
+    create temp table tasks as
     with letters as (
         select unnest(ARRAY[A, B, C, D]) l
     ),
@@ -31,6 +32,15 @@ begin
         )
     for update skip locked;
 
+    create temp table to_correlate as
+    select x_num, x_den, y_num, y_den
+    from tasks
+    -- remove symmetric equations from calculation:
+    except
+    select y_num, y_den, x_num, x_den
+    from tasks
+    where y_num < x_num;
+
     if not exists (select from to_correlate) then
         -- correlation for all tuples is calculated, nothing to do
         return;
@@ -39,7 +49,7 @@ begin
     -- compose corr() expressions for all to_correlate rows
     select into corr_sql string_agg(
         replace(replace(replace(replace(
-            format('corr(%s/%s, %s/%s)', x_num, x_den, y_num, y_den),
+            format('corr(%s/nullif(%s, 0), %s/nullif(%s, 0))', x_num, x_den, y_num, y_den),
             A::text, 'x_num.indicator_value'),
             B::text, 'x_den.indicator_value'),
             C::text, 'y_num.indicator_value'),
@@ -68,12 +78,12 @@ begin
     select x_num, x_den, y_num, y_den, correlation
     from (select *, row_number() over () as row_num from to_correlate)
     join (select *, row_number() over () as row_num from result_col)
---    using(row_num)
---    -- add symmetric values: corr(x,y) = corr(y,x)
---    union
---    select y_num, y_den, x_num, x_den, correlation
---    from (select *, row_number() over () as row_num from to_correlate)
---    join (select *, row_number() over () as row_num from result_col)
+    using(row_num)
+    -- add symmetric values: corr(x,y) = corr(y,x)
+    union
+    select y_num, y_den, x_num, x_den, correlation
+    from (select *, row_number() over () as row_num from to_correlate)
+    join (select *, row_number() over () as row_num from result_col)
     using(row_num);
 
     -- apply results to the bivariate_axis_correlation_v2 table
@@ -92,6 +102,6 @@ begin
         quality = excluded.quality;
     
     delete from task_queue
-    where ctid in (select task_id from to_correlate);
+    where ctid in (select task_id from tasks);
 end;
 $$;
