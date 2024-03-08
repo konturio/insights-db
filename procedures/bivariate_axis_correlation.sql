@@ -8,6 +8,7 @@ as
 $$
 declare
     corr_sql text;
+    task_count integer;
 begin
     drop table if exists tasks;
     drop table if exists to_correlate;
@@ -45,6 +46,9 @@ begin
         -- correlation for all tuples is calculated, nothing to do
         return;
     end if;
+
+    select count(0) from to_correlate into task_count;
+    raise notice 'run correlation for % tuples', task_count;
 
     -- compose corr() expressions for all to_correlate rows
     select into corr_sql string_agg(
