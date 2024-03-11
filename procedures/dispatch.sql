@@ -11,12 +11,20 @@ declare
     y_den   uuid;
     declare t timestamptz := clock_timestamp();
 begin
+
+    perform pg_advisory_lock(42);
+
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
     order by priority
     for update skip locked
     limit 1;
+
+    if task != 'correlations' then
+        -- update_correlation() will lock some more rows in task_queue and then release the advisory lock
+        perform pg_advisory_unlock(42);
+    end if;
 
     if task_id is null then
         -- no tasks left, exit

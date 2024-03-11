@@ -33,6 +33,9 @@ begin
         )
     for update skip locked;
 
+    -- unlock task_queue for other processes
+    perform pg_advisory_unlock(42);
+
     create temp table to_correlate as
     select x_num, x_den, y_num, y_den
     from tasks
