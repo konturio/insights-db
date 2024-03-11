@@ -9,7 +9,11 @@ declare
     x_den   uuid;
     y_num   uuid;
     y_den   uuid;
+    declare t timestamptz := clock_timestamp();
 begin
+
+    perform pg_advisory_lock(42);
+
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
@@ -17,6 +21,17 @@ begin
     for update skip locked
     limit 1;
 
+    if task != 'correlations' then
+        -- update_correlation() will lock some more rows in task_queue and then release the advisory lock
+        perform pg_advisory_unlock(42);
+    end if;
+
+    if task_id is null then
+        -- no tasks left, exit
+        return;
+    end if;
+
+    raise notice 'start % task tid=% for %, %, %, %', task, task_id, x_num, x_den, y_num, y_den;
     case task
         when 'quality' then
           call direct_quality_estimation(x_num, x_den);
@@ -29,6 +44,7 @@ begin
         else
           raise notice 'unknown task type';
     end case;
+    raise notice 'end % task tid=% time=%', task, task_id, date_trunc('second', clock_timestamp() - t);
 
     delete from task_queue where ctid = task_id;
 end;
