@@ -1,3 +1,8 @@
+do $$
+declare
+    rows_inserted integer;
+begin
+
 with new_corr_axis as (
     select
         a.numerator_uuid x_numerator_uuid,      -- not base
@@ -29,3 +34,10 @@ select
     x_numerator_uuid, x_denominator_uuid, y_numerator_uuid, y_denominator_uuid
 from new_corr_axis
 on conflict do nothing;
+
+get diagnostics rows_inserted = row_count;
+if rows_inserted > 0 then
+    raise notice 'created % correlation tasks', rows_inserted;
+end if;
+
+end $$;

@@ -1,3 +1,8 @@
+do $$
+declare
+    rows_inserted integer;
+begin
+
 with new_axis as (
     insert into bivariate_axis_v2
         (numerator, denominator, numerator_uuid, denominator_uuid)
@@ -26,3 +31,10 @@ from new_axis, (values
     (3, 'analytics')
 ) tasks (priority, task_type)
 on conflict do nothing;
+
+get diagnostics rows_inserted = row_count;
+if rows_inserted > 0 then
+    raise notice 'created % tasks', rows_inserted;
+end if;
+
+end $$;

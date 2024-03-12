@@ -1,3 +1,8 @@
+do $$
+declare
+    rows_updated integer;
+begin
+
 update bivariate_axis_v2 a
 set
     min         = coalesce(b.min, a.min),
@@ -13,3 +18,10 @@ from bivariate_axis_overrides b
 where
     a.numerator_uuid = b.numerator_id and
     a.denominator_uuid = b.denominator_id;
+
+get diagnostics rows_updated = row_count;
+if rows_updated > 0 then
+    raise notice 'status changed for % indicators', rows_updated;
+end if;
+
+end $$;

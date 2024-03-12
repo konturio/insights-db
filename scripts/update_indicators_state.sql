@@ -1,3 +1,8 @@
+do $$
+declare
+    rows_updated integer;
+begin
+
 with indicators_with_tasks as (
               select x_numerator_id from task_queue
     union all select x_denominator_id from task_queue
@@ -33,3 +38,10 @@ set
     state = case state when 'READY' then 'OUTDATED' else 'READY' end
 where
     internal_id in (select internal_id from indicators_to_update);
+
+get diagnostics rows_updated = row_count;
+if rows_updated > 0 then
+    raise notice 'status changed for % indicators', rows_updated;
+end if;
+
+end $$;
