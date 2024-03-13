@@ -16,11 +16,11 @@ task_scheduler:
 	# 3. updates state of indicators in bivariate_indicators_metadata table
 	# "repeatable read" is required in case update_indicators_state.sql starts when
 	# indicator tasks are completed, but correlation tasks are not yet created - so that we're not mistakenly mark it as READY
-	while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; psql -1 -qc "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -f scripts/create_correlation_tasks.sql -f scripts/update_indicators_state.sql; sleep 20; done
+	while true; do psql -qf scripts/create_quality_stops_analytics_tasks.sql; psql -1 -qc "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -qf scripts/create_correlation_tasks.sql -qf scripts/update_indicators_state.sql; sleep 20; done
 
 .PHONY: apply_overrides_loop
 apply_overrides_loop:
-	while true; do psql -f scripts/apply_all_axis_overrides.sql; sleep 5m; done
+	while true; do psql -qf scripts/apply_all_axis_overrides.sql; sleep 5m; done
 
 .PHONY: remove_outated_indicators_loop
 remove_outated_indicators_loop:
