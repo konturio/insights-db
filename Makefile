@@ -1,19 +1,12 @@
 SHELL := /bin/bash
 
 .PHONY: all
-all: sql_functions task_scheduler remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop
+all: task_scheduler remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop
 
-
-.PHONY: sql_functions
-sql_functions:
-	psql -qf procedures/dispatch.sql
-	psql -qf procedures/direct_quality_estimation.sql
-	psql -qf procedures/16269_bivariate_axis_analytics.sql
-	psql -qf procedures/axis_stops_estimation.sql
-	psql -qf procedures/bivariate_axis_correlation.sql
 
 .PHONY: insights_tasks_loop
 insights_tasks_loop:
+	$(SHELL) scripts/create_sql_functions.sh
 	while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -j 3 -n0 "psql -q -c 'call dispatch()'"; sleep 10; done
 
 .PHONY: task_scheduler
@@ -23,7 +16,7 @@ task_scheduler:
 	# 3. updates state of indicators in bivariate_indicators_metadata table
 	# "repeatable read" is required in case update_indicators_state.sql starts when
 	# indicator tasks are completed, but correlation tasks are not yet created - so that we're not mistakenly mark it as READY
-	while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; psql -1 -qc "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -f scripts/create_correlation_tasks.sql -f scripts/update_indicators_state.sql; sleep 1m; done
+	while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; psql -1 -qc "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -f scripts/create_correlation_tasks.sql -f scripts/update_indicators_state.sql; sleep 20; done
 
 .PHONY: apply_overrides_loop
 apply_overrides_loop:
