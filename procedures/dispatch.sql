@@ -31,7 +31,11 @@ begin
         return;
     end if;
 
-    raise notice 'start % task tid=% for %, %, %, %', task, task_id, x_num, x_den, y_num, y_den;
+    raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
+
+    -- let's keep the stats actual
+    analyze stat_h3_transposed;
+
     case task
         when 'quality' then
           call direct_quality_estimation(x_num, x_den);
