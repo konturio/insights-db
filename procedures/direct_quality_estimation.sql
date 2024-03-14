@@ -8,14 +8,22 @@ $$
 begin
     -- 1. for hexagons of resolution 1..5 group values by common parent hexagon and calculate the average inside a parent
     with averages as (select h3_cell_to_parent(h3) as h3_parent,
-                             indicator_uuid        as indicator_uuid,
+                             x_numerator_uuid      as indicator_uuid,
                              avg(indicator_value)  as agg_value
                       from stat_h3_transposed
-                      where (indicator_uuid = x_numerator_uuid or
-                             indicator_uuid = x_denominator_uuid)
+                      where indicator_uuid = x_numerator_uuid
                         and h3_get_resolution(h3) between 1 and 5
                         and indicator_value != 0
-                      group by h3_parent, indicator_uuid),
+                      group by h3_parent
+                      union all
+                      select h3_cell_to_parent(h3) as h3_parent,
+                             x_denominator_uuid    as indicator_uuid,
+                             avg(indicator_value)  as agg_value
+                      from stat_h3_transposed
+                      where indicator_uuid = x_denominator_uuid
+                        and h3_get_resolution(h3) between 1 and 5
+                        and indicator_value != 0
+                      group by h3_parent),
 
          -- 2. join actual indicator values and average values from prev. step
          stat as (select a.indicator_value as numerator_value,
