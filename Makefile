@@ -7,16 +7,11 @@ all: task_scheduler remove_outated_indicators_loop insights_tasks_loop apply_ove
 .PHONY: insights_tasks_loop
 insights_tasks_loop:
 	$(SHELL) scripts/create_sql_functions.sh
-	while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -j 3 -n0 "psql -q -c 'call dispatch()'"; sleep 10; done
+	$(SHELL) scripts/do_tasks.sh
 
 .PHONY: task_scheduler
 task_scheduler:
-	# 1. creates bivariate axes
-	# 2. creates tasks in task_queue table
-	# 3. updates state of indicators in bivariate_indicators_metadata table
-	# "repeatable read" is required in case update_indicators_state.sql starts when
-	# indicator tasks are completed, but correlation tasks are not yet created - so that we're not mistakenly mark it as READY
-	while true; do psql -qf scripts/create_quality_stops_analytics_tasks.sql; psql -1 -qc "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -qf scripts/create_correlation_tasks.sql -qf scripts/update_indicators_state.sql; sleep 20; done
+	$(SHELL) scripts/create_tasks.sh
 
 .PHONY: apply_overrides_loop
 apply_overrides_loop:
