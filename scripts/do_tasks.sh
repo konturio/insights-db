@@ -8,6 +8,6 @@ while true; do
         echo "postgres not ready, $0 is waiting..."
         sleep 120
     fi
-    seq `psql -c 'select count(0) from task_queue' -t` | parallel -j 100% -n0 "psql -q -c 'call dispatch()'"
+    seq `psql -c 'select count(0) from task_queue' -t` | parallel -j ${MAX_PARALLEL_TASKS:=3} -n0 "psql -q -c 'call dispatch()'"
     sleep 10
 done
