@@ -2,18 +2,26 @@
 
 insights-db (or insights-api-db-svc) is a service that does heavy statistics calculations for indicators uploaded to Insights API. It creates task queue and executes these tasks in parallel. Tasks are SQL queries performed on Postgresql server.
 
-Tasks can be of type:
+## tasks
+
 * quality calculation
 * stops calculation
 * bivariate analytics calculation
 * correlation calculation
 
-Some jobs are run in the infinite loops:
-* creating tasks
-* executing tasks
-* overriding bivariate axis labels and stops with custom values
-* changing indicator statuses
-* deleting outdated indicators
+first 3 tasks save the results into `bivariate_axis_v2`, and the last one writes to `bivariate_axis_correlation_v2`
+
+## periodic jobs
+
+* **creating tasks** - insert into `task_queue`
+* **executing tasks** - read from `task_queue` & run tasks
+* **overriding bivariate axis labels and stops** with custom values - updates `bivariate_axis_v2`
+* **changing indicator statuses** - updates `bivariate_indicators_metadata`
+* **deleting outdated indicators** - removes from `bivariate_indicators_metadata` and `stat_h3_transposed`
+
+## Processes flowchart
+
+see block diagram in [fibery](https://kontur.fibery.io/Tasks/User_Story/Insights-DB-service-MVP-2005) - it describes what's happening inside a service
 
 ## Database
 insights-api-db has no its own database. It uses Insights API database: test, dev and prod instances correspondingly
@@ -72,3 +80,21 @@ check bash processes. at least 4 of them should be present:
 23 /bin/bash -c while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; psql -1 -c "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -f scripts/create_correlation_tasks.sql -f scripts/update_indicators_state.sql; sleep 1m; done
 4092 /bin/bash -c while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -j 3 -n0 "psql -q -c 'call dispatch()'"; sleep 1; done
 ```
+
+## local testing
+
+Remove bivariate axes and correlation results in database, so that insights-db can recalculate everything. Also set status NEW to indicators
+
+```
+truncate bivariate_axis_v2 ;
+truncate bivariate_axis_correlation_v2;
+update bivariate_indicators_metadata set state = 'NEW';
+```
+
+run `make` targets:
+
+```
+PGUSER=postgres bash start.sh
+```
+
+Note: replace `PGUSER=postgres` with any other user you've set up your local database
