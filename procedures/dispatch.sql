@@ -17,7 +17,7 @@ begin
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
-    order by priority
+    order by priority, created_at
     for update skip locked
     limit 1;
 
