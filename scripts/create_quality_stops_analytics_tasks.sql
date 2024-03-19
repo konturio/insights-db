@@ -3,6 +3,8 @@ declare
     rows_inserted integer;
 begin
 
+-- create tasks for numerator/denominator pairs of indicators:
+-- quality, stops, analytics
 with new_axis as (
     insert into bivariate_axis_v2
         (numerator, denominator, numerator_uuid, denominator_uuid)
@@ -20,6 +22,11 @@ with new_axis as (
     on conflict (numerator_uuid, denominator_uuid)
         do nothing
     returning numerator_uuid, denominator_uuid
+),
+new_indicators as (
+    select distinct numerator_uuid indicator_uuid from new_axis
+    union
+    select distinct denominator_uuid indicator_uuid from new_axis
 )
 
 insert into task_queue
@@ -30,6 +37,9 @@ from new_axis, (values
     (2, 'stops'),
     (3, 'analytics')
 ) tasks (priority, task_type)
+union all
+select 0, 'system_indicators', indicator_uuid, null
+from new_indicators
 on conflict do nothing;
 
 get diagnostics rows_inserted = row_count;

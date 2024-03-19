@@ -40,6 +40,8 @@ begin
     end if;
 
     case task
+        when 'system_indicators' then
+          call calculate_system_indicators(x_num);
         when 'quality' then
           call direct_quality_estimation(x_num, x_den);
         when 'stops' then

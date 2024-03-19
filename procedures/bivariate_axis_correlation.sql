@@ -10,12 +10,7 @@ declare
     corr_sql text;
     task_count integer;
 begin
-    drop table if exists tasks;
-    drop table if exists to_correlate;
-    drop table if exists corr_results;
-    drop table if exists result_col;
-
-    create temp table tasks as
+    create temp table tasks on commit drop as
     with letters as (
         select unnest(ARRAY[A, B, C, D]) l
     ),
@@ -36,7 +31,7 @@ begin
     -- unlock task_queue for other processes
     perform pg_advisory_unlock(42);
 
-    create temp table to_correlate as
+    create temp table to_correlate on commit drop as
     select x_num, x_den, y_num, y_den
     from tasks
     -- remove symmetric equations from calculation:
@@ -64,7 +59,7 @@ begin
         ',') from to_correlate;
 
     -- long part: select 4 indicators and run the actual correlation
-    execute 'create temp table result_col as select unnest(array[' || corr_sql || ']) correlation'
+    execute 'create temp table result_col on commit drop as select unnest(array[' || corr_sql || ']) correlation'
     '   from stat_h3_transposed x_num
         join stat_h3_transposed x_den using(h3)
         join stat_h3_transposed y_num using(h3)
@@ -81,7 +76,7 @@ begin
     ' using A, B, C, D;
 
     -- join correlation results with the indicator uuids for which it was calculated
-    create temp table corr_results as
+    create temp table corr_results on commit drop as
     select x_num, x_den, y_num, y_den, correlation
     from (select *, row_number() over () as row_num from to_correlate)
     join (select *, row_number() over () as row_num from result_col)
