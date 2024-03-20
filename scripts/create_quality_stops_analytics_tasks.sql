@@ -57,7 +57,7 @@ select internal_id into one_uuid from bivariate_indicators_metadata
 where owner = 'insights-db' and param_id = 'one';
 
 -- set lower priority for the tasks containing 'one' and 'area_km2',
--- so there's higher change to calculate them in advance
+-- so there's higher change to calculate these indicators in advance
 update new_tasks
 set priority = priority + .5
 where task_type in ('quality', 'stops', 'analytics')
