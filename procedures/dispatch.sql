@@ -21,6 +21,14 @@ begin
     for update skip locked
     limit 1;
 
+    if task = 'system_indicators' then
+        -- only 1 'system_indicators' task should be executed at a time to avoid unnecessary computations.
+        -- lock all other tasks and release them in the end, without deleting them
+        perform from task_queue
+        where task_type = 'system_indicators'
+        for update;
+    end if;
+
     if task != 'correlations' then
         -- update_correlation() will lock some more rows in task_queue and then release the advisory lock
         perform pg_advisory_unlock(42);
