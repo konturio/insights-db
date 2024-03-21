@@ -6,6 +6,7 @@ create or replace procedure calculate_system_indicators(x_numerator_uuid uuid)
 as
 $$
 declare
+    rows_inserted integer;
     area_km2_uuid uuid;
     one_uuid uuid;
 begin
@@ -44,6 +45,12 @@ begin
         area_km2_uuid,
         ST_Area(h3_cell_to_boundary_geography(h3)) / 1000000.0
     from missing_polygons;
+
+    get diagnostics rows_inserted = row_count;
+    if rows_inserted > 0 then
+        -- TODO: recalculate axis with area/one indicators
+        raise notice 'inserted % rows', rows_inserted;
+    end if;
 
 end;
 $$;
