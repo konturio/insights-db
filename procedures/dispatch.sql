@@ -17,9 +17,17 @@ begin
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
-    order by priority, created_at
+    order by created_at, priority
     for update skip locked
     limit 1;
+
+    if task = 'system_indicators' then
+        -- only 1 'system_indicators' task should be executed at a time to avoid unnecessary computations.
+        -- lock all other tasks and release them in the end, without deleting them
+        perform from task_queue
+        where task_type = 'system_indicators'
+        for update;
+    end if;
 
     if task != 'correlations' then
         -- update_correlation() will lock some more rows in task_queue and then release the advisory lock
@@ -33,13 +41,9 @@ begin
 
     raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
 
-    if pg_try_advisory_lock(11) then
-        -- let's keep the stats actual, but only 1 analyze at a time
-        analyze stat_h3_transposed;
-        perform pg_advisory_unlock(11);
-    end if;
-
     case task
+        when 'system_indicators' then
+          call calculate_system_indicators(x_num);
         when 'quality' then
           call direct_quality_estimation(x_num, x_den);
         when 'stops' then
