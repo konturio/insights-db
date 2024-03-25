@@ -59,20 +59,11 @@ begin
         ',') from to_correlate;
 
     -- long part: select 4 indicators and run the actual correlation
-    execute 'create temp table result_col on commit drop as select unnest(array[' || corr_sql || ']) correlation'
-    '   from stat_h3_transposed x_num
-        join stat_h3_transposed x_den using(h3)
-        join stat_h3_transposed y_num using(h3)
-        join stat_h3_transposed y_den using(h3)
-        where
-            x_num.indicator_uuid = $1 and
-            x_den.indicator_uuid = $2 and
-            y_num.indicator_uuid = $3 and
-            y_den.indicator_uuid = $4 and
-            x_den.indicator_value != 0 and
-            y_den.indicator_value != 0 and
-            (x_num.indicator_value != 0 or
-             y_num.indicator_value !=0)
+    execute 'create temp table result_col on commit drop as select unnest(array[' || corr_sql || ']) correlation
+        from (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $1 order by h3) x_num
+        join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $2 order by h3) x_den using(h3)
+        join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $3 order by h3) y_num using(h3)
+        join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $4 order by h3) y_den using(h3)
     ' using A, B, C, D;
 
     -- join correlation results with the indicator uuids for which it was calculated
