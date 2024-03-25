@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 .PHONY: all
-all: task_scheduler remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop
+all: task_scheduler remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop geometry
 
 
 .PHONY: insights_tasks_loop
@@ -20,3 +20,8 @@ apply_overrides_loop:
 .PHONY: remove_outated_indicators_loop
 remove_outated_indicators_loop:
 	while true; do psql -1 -f scripts/remove_outated_indicators.sql; sleep 5m; done
+
+.PHONY: geometry
+geometry:
+	# once a day fill the gaps in stat_h3_geom
+	while true; do echo 'start updating stat_h3_geom...'; psql -f scripts/update_stat_h3_geom.sql; echo 'end updating stat_h3_geom.'; sleep 1d; done
