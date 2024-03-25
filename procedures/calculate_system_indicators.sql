@@ -43,7 +43,7 @@ begin
     select
         h3,
         area_km2_uuid,
-        ST_Area(h3_cell_to_boundary_geography(h3)) / 1000000.0
+        ST_Area(h3_cell_to_boundary_geography(h3)) / 1000000.0 -- h3_cell_area ??
     from missing_polygons;
 
     get diagnostics rows_inserted = row_count;

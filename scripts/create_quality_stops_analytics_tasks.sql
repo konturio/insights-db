@@ -36,7 +36,6 @@ tasks as (
     select priority, task_type, numerator_uuid, denominator_uuid
     from new_axis, (values
         (1., 'quality'),
-        (2., 'stops'),
         (3., 'analytics')
     ) tasks (priority, task_type)
 )
