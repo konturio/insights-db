@@ -8,7 +8,24 @@ declare
     skip_stops boolean := false;
     percentiles_keys text[] := '{p33, p50, p66}';
     percentiles float[] := '{.33, .5, .66}';
+    area_km2_uuid uuid;
+    one_uuid uuid;
+    indicator_id uuid;
+    num_value text;
+    den_value text;
 begin
+    select internal_id into area_km2_uuid from bivariate_indicators_metadata
+    where owner = 'insights-db' and param_id = 'area_km2';
+
+    select internal_id into one_uuid from bivariate_indicators_metadata
+    where owner = 'insights-db' and param_id = 'one';
+
+    if x_numerator_uuid in (area_km2_uuid, one_uuid) and x_denominator_uuid in (area_km2_uuid, one_uuid) then
+        -- shortcut if both indicators are system-
+        -- TODO wht do I do
+        return;
+    end if;
+
     -- skip stops calculations if there's overrides for min, p25, p75, max
     if exists (select from bivariate_axis_overrides
                where numerator_id = x_numerator_uuid
@@ -22,33 +39,63 @@ begin
         percentiles = '{.5}';
     end if;
 
-    with statistics as (select h3_get_resolution(numerator.h3) as r,
+    if x_numerator_uuid in (area_km2_uuid, one_uuid) or x_denominator_uuid in (area_km2_uuid, one_uuid) then
+        case x_numerator_uuid
+        when area_km2_uuid then
+            num_value := 'h3_cell_area(h3)';
+        when one_uuid then
+            num_value := '1.';
+        else
+            num_value := 'indicator_value';
+            indicator_id := x_numerator_uuid;
+        end case;
+        case x_denominator_uuid
+        when area_km2_uuid then
+            den_value := 'h3_cell_area(h3)';
+        when one_uuid then
+            den_value := '1.';
+        else
+            den_value := 'indicator_value';
+            indicator_id := x_denominator_uuid;
+        end case;
+
+        execute 'create temp view tmp_axis as
+        select h3, '|| num_value ||' / nullif('|| den_value ||', 0) m
+        from stat_h3_transposed
+        where indicator_uuid = ' || quote_literal(indicator_id);
+    else
+        -- common case: select both indicators from db
+        execute 'create temp view tmp_axis as
+        select h3, z.m
+        from (
+            select h3, indicator_value
+            from stat_h3_transposed
+            where indicator_uuid = '|| quote_literal(x_numerator_uuid) ||'
+            order by indicator_uuid, h3) numerator
+        join (
+            select h3, indicator_value
+            from stat_h3_transposed
+            where indicator_uuid = '|| quote_literal(x_denominator_uuid) ||'
+            order by indicator_uuid, h3) denominator using(h3),
+        lateral (
+            select numerator.indicator_value / nullif(denominator.indicator_value, 0) as m
+        ) z';
+    end if;
+
+    with statistics as (select h3_get_resolution(h3) as r,
                                jsonb_build_object(
-                                       'sum', nullif(sum(z.m), 0),
-                                       'min', min(z.m) filter (where z.m != 0),
-                                       'max', max(z.m) filter (where z.m != 0),
-                                       'mean', nullif(avg(z.m), 0),
-                                       'stddev', nullif(stddev(z.m), 0)
+                                       'sum', nullif(sum(m), 0),
+                                       'min', min(m) filter (where m != 0),
+                                       'max', max(m) filter (where m != 0),
+                                       'mean', nullif(avg(m), 0),
+                                       'stddev', nullif(stddev(m), 0)
                                    )
                                 || 
                                 jsonb_object(
                                     percentiles_keys,
-                                    (percentile_cont(percentiles) within group (order by z.m))::text[]
+                                    (percentile_cont(percentiles) within group (order by m))::text[]
                                 ) as stats
-                        -- order 2 sets by h3 so that merge join is preferable for the planner
-                        from (
-                            select h3, indicator_value
-                            from stat_h3_transposed
-                            where indicator_uuid = x_numerator_uuid
-                            order by indicator_uuid, h3) numerator
-                        join (
-                            select h3, indicator_value
-                            from stat_h3_transposed
-                            where indicator_uuid = x_denominator_uuid
-                            order by indicator_uuid, h3) denominator using(h3),
-                        lateral (
-                            select numerator.indicator_value / nullif(denominator.indicator_value, 0) as m
-                        ) z
+                        from tmp_axis
                         group by r
                         order by r),
          quality as (select key,

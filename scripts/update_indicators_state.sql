@@ -33,4 +33,4 @@ set
     state = case state when 'READY' then 'OUTDATED' else 'READY' end
 where
     internal_id in (select internal_id from indicators_to_update)
-returning 'status change', state, internal_id;
+returning 'status change', param_id, state, internal_id;
