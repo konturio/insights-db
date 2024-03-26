@@ -5,11 +5,10 @@ insights-db (or insights-api-db-svc) is a service that does heavy statistics cal
 ## tasks
 
 * quality calculation
-* stops calculation
-* bivariate analytics calculation
+* analytics calculation
 * correlation calculation
 
-first 3 tasks save the results into `bivariate_axis_v2`, and the last one writes to `bivariate_axis_correlation_v2`
+first 2 tasks save the results into `bivariate_axis_v2`, and the last one writes to `bivariate_axis_correlation_v2`
 
 ## periodic jobs
 

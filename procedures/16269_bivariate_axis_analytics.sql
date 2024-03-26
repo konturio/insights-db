@@ -4,24 +4,51 @@ create or replace procedure bivariate_axis_analytics(x_numerator_uuid uuid, x_de
     language plpgsql
 as
 $$
+declare
+    skip_stops boolean := false;
+    percentiles_keys text[] := '{p33, p50, p66}';
+    percentiles float[] := '{.33, .5, .66}';
 begin
+    -- skip stops calculations if there's overrides for min, p25, p75, max
+    if exists (select from bivariate_axis_overrides
+               where numerator_id = x_numerator_uuid
+                 and denominator_id = x_denominator_uuid
+                 and min is not null
+                 and p25 is not null
+                 and p75 is not null
+                 and max is not null) then
+        skip_stops = true;
+        percentiles_keys = '{p50}';
+        percentiles = '{.5}';
+    end if;
+
     with statistics as (select h3_get_resolution(numerator.h3) as r,
                                jsonb_build_object(
                                        'sum', nullif(sum(z.m), 0),
                                        'min', min(z.m) filter (where z.m != 0),
                                        'max', max(z.m) filter (where z.m != 0),
                                        'mean', nullif(avg(z.m), 0),
-                                       'stddev', nullif(stddev(z.m), 0),
-                                       'median', nullif(percentile_cont(0.5) within group (order by z.m), 0)
-                                   )                           as stats
-                        from stat_h3_transposed AS numerator
-                                 join stat_h3_transposed as denominator
-                                      on numerator.indicator_uuid = x_numerator_uuid
-                                          and denominator.indicator_uuid = x_denominator_uuid
-                                          and numerator.h3 = denominator.h3,
-                             lateral (
-                                 select numerator.indicator_value / nullif(denominator.indicator_value, 0) as m
-                                 ) z
+                                       'stddev', nullif(stddev(z.m), 0)
+                                   )
+                                || 
+                                jsonb_object(
+                                    percentiles_keys,
+                                    (percentile_cont(percentiles) within group (order by z.m))::text[]
+                                ) as stats
+                        -- order 2 sets by h3 so that merge join is preferable for the planner
+                        from (
+                            select h3, indicator_value
+                            from stat_h3_transposed
+                            where indicator_uuid = x_numerator_uuid
+                            order by indicator_uuid, h3) numerator
+                        join (
+                            select h3, indicator_value
+                            from stat_h3_transposed
+                            where indicator_uuid = x_denominator_uuid
+                            order by indicator_uuid, h3) denominator using(h3),
+                        lateral (
+                            select numerator.indicator_value / nullif(denominator.indicator_value, 0) as m
+                        ) z
                         group by r
                         order by r),
          quality as (select key,
@@ -49,10 +76,15 @@ begin
         max_quality    = (j -> 'max' ->> 1)::double precision,
         stddev_value   = (j -> 'stddev' ->> 0)::double precision,
         stddev_quality = (j -> 'stddev' ->> 1)::double precision,
-        median_value   = (j -> 'median' ->> 0)::double precision,
-        median_quality = (j -> 'median' ->> 1)::double precision,
+        median_value   = (j -> 'p50' ->> 0)::double precision,
+        median_quality = (j -> 'p50' ->> 1)::double precision,
         mean_value     = (j -> 'mean' ->> 0)::double precision,
-        mean_quality   = (j -> 'mean' ->> 1)::double precision
+        mean_quality   = (j -> 'mean' ->> 1)::double precision,
+        -- stops:
+        min = case when skip_stops then min else floor((j -> 'min' ->> 0)::double precision) end,
+        p25 = case when skip_stops then p25 else (j -> 'p33' ->> 0)::double precision end,
+        p75 = case when skip_stops then p75 else (j -> 'p66' ->> 0)::double precision end,
+        max = case when skip_stops then max else ceil((j -> 'max' ->> 0)::double precision) end
     from upd
     where ba.numerator_uuid = x_numerator_uuid
       and ba.denominator_uuid = x_denominator_uuid;

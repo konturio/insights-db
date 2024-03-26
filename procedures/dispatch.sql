@@ -46,8 +46,6 @@ begin
           call calculate_system_indicators(x_num);
         when 'quality' then
           call direct_quality_estimation(x_num, x_den);
-        when 'stops' then
-          call axis_stops_estimation(x_num, x_den);
         when 'analytics' then
           call bivariate_axis_analytics(x_num, x_den);
         when 'correlations' then
