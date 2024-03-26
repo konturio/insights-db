@@ -1,3 +1,50 @@
+drop function if exists get_correlation_sql;
+
+create or replace function get_correlation_sql(A uuid, B uuid, C uuid, D uuid) returns text
+as
+$$
+declare
+    corr_sql text;
+    sql text;
+    area_km2_uuid uuid;
+    one_uuid uuid;
+begin
+    select internal_id into area_km2_uuid from bivariate_indicators_metadata
+    where owner = 'insights-db' and param_id = 'area_km2';
+
+    select internal_id into one_uuid from bivariate_indicators_metadata
+    where owner = 'insights-db' and param_id = 'one';
+
+    -- compose corr() expressions for all to_correlate rows
+    select into corr_sql string_agg(
+        replace(replace(replace(replace(replace(replace(
+            format('corr(%s/nullif(%s, 0), %s/nullif(%s, 0))', x_num, x_den, y_num, y_den),
+            area_km2_uuid::text, 'h3_cell_area(h3)'),
+            one_uuid::text, '1.'),
+            A::text, 'x_num.indicator_value'),
+            B::text, 'x_den.indicator_value'),
+            C::text, 'y_num.indicator_value'),
+            D::text, 'y_den.indicator_value'),
+        ',') from to_correlate;
+
+    sql := 'create temp table result_col on commit drop as select unnest(array[' || corr_sql || ']) correlation
+        from (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $1 order by h3) x_num';
+    if B not in (one_uuid, area_km2_uuid) then
+        sql := sql || ' join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $2 order by h3) x_den using(h3) ';
+    end if;
+    if C not in (one_uuid, area_km2_uuid) then
+        sql := sql || ' join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $3 order by h3) y_num using(h3) ';
+    end if;
+    if D not in (one_uuid, area_km2_uuid) then
+        sql := sql || ' join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $4 order by h3) y_den using(h3) ';
+    end if;
+
+    return sql;
+end;
+$$
+    language plpgsql;
+
+
 drop procedure if exists update_correlation;
 
 create or replace procedure update_correlation(
@@ -7,7 +54,6 @@ create or replace procedure update_correlation(
 as
 $$
 declare
-    corr_sql text;
     task_count integer;
 begin
     create temp table tasks on commit drop as
@@ -48,23 +94,7 @@ begin
     select count(0) from to_correlate into task_count;
     raise notice 'run correlation for % tuples', task_count;
 
-    -- compose corr() expressions for all to_correlate rows
-    select into corr_sql string_agg(
-        replace(replace(replace(replace(
-            format('corr(%s/nullif(%s, 0), %s/nullif(%s, 0))', x_num, x_den, y_num, y_den),
-            A::text, 'x_num.indicator_value'),
-            B::text, 'x_den.indicator_value'),
-            C::text, 'y_num.indicator_value'),
-            D::text, 'y_den.indicator_value'),
-        ',') from to_correlate;
-
-    -- long part: select 4 indicators and run the actual correlation
-    execute 'create temp table result_col on commit drop as select unnest(array[' || corr_sql || ']) correlation
-        from (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $1 order by h3) x_num
-        join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $2 order by h3) x_den using(h3)
-        join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $3 order by h3) y_num using(h3)
-        join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = $4 order by h3) y_den using(h3)
-    ' using A, B, C, D;
+    execute get_correlation_sql(A, B, C, D) using A, B, C, D;
 
     -- join correlation results with the indicator uuids for which it was calculated
     create temp table corr_results on commit drop as

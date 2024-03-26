@@ -29,7 +29,7 @@ begin
     end if;
 
     -- long part: select 4 indicators and run the actual correlation
-    select corr(a.indicator_value, nullif(b.indicator_value, 0)) into correlation
+    select corr(a.indicator_value, b.indicator_value) into correlation
     from (select h3, indicator_value from stat_h3_transposed where indicator_uuid = x_numerator_uuid order by h3) a
     join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = prev_version order by h3) b using(h3);
 
