@@ -9,7 +9,9 @@ declare
     external_uuid uuid;
     upload_date timestamptz;
     prev_version uuid;
-    correlation double precision;
+    slope double precision;
+    intercept double precision;
+    fill_ratio double precision;
 begin
 
     select external_id, date into external_uuid, upload_date
@@ -28,14 +30,17 @@ begin
         return;
     end if;
 
-    -- long part: select 4 indicators and run the actual correlation
-    select corr(a.indicator_value, b.indicator_value) into correlation
+    select
+        regr_slope(a.indicator_value, nullif(b.indicator_value, 0)),
+        regr_intercept(a.indicator_value, nullif(b.indicator_value, 0)),
+        count(a.indicator_value)::double precision / count(b.indicator_value)
+    into slope, intercept, fill_ratio
     from (select h3, indicator_value from stat_h3_transposed where indicator_uuid = x_numerator_uuid order by h3) a
-    join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = prev_version order by h3) b using(h3);
+    full join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = prev_version order by h3) b using(h3);
 
-    raise notice '% has prev version %, with correlation %', x_numerator_uuid, prev_version, correlation;
+    raise notice '% has prev version %: regr slope %, intercept %, fill_ratio %', x_numerator_uuid, prev_version, slope, intercept, fill_ratio;
 
-    if correlation > .999 then
+    if slope between 0.999 and 1.001 and intercept between -0.001 and 0.001 and fill_ratio between 0.99 and 1.01 then
         raise notice 'discarding % indicator and all related tasks', prev_version;
 
         delete from task_queue
@@ -44,6 +49,9 @@ begin
         update bivariate_indicators_metadata
         set state = 'OUTDATED'
         where internal_id = x_numerator_uuid;
+        raise notice 'discarding % indicator and all related tasks', prev_version;
+    else
+        raise notice 'indicator % stays in db', prev_version;
     end if;
 
 end;
