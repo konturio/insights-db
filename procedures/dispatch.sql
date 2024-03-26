@@ -27,6 +27,17 @@ begin
         perform from task_queue
         where task_type = 'system_indicators'
         for update;
+
+    elsif task = 'check_new_indicator' then
+        -- lock all tasks with new indicator until we perform some checks on it.
+        -- tasks will be deleted if the check fails
+        perform from task_queue
+        where x_numerator_id = x_num or x_denominator_id = x_num or y_numerator_id = x_num or y_denominator_id = x_num
+        for update;
+
+    elsif task_id is null then
+        -- no tasks left, exit
+        return;
     end if;
 
     if task != 'correlations' then
@@ -34,14 +45,12 @@ begin
         perform pg_advisory_unlock(42);
     end if;
 
-    if task_id is null then
-        -- no tasks left, exit
-        return;
-    end if;
 
     raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
 
     case task
+        when 'check_new_indicator' then
+          call check_new_indicator(x_num);
         when 'system_indicators' then
           call calculate_system_indicators(x_num);
         when 'quality' then
