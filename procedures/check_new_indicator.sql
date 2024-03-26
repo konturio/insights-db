@@ -40,7 +40,7 @@ begin
 
     raise notice '% has prev version %: regr slope %, intercept %, fill_ratio %', x_numerator_uuid, prev_version, slope, intercept, fill_ratio;
 
-    if slope between 0.999 and 1.001 and intercept between -0.001 and 0.001 and fill_ratio between 0.99 and 1.01 then
+    if slope between 0.999 and 1.001 and intercept between -0.01 and 0.01 and fill_ratio between 0.99 and 1.01 then
         raise notice 'discarding % indicator and all related tasks', prev_version;
 
         delete from task_queue
