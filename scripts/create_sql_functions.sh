@@ -9,6 +9,7 @@ read -r -d '' migrate_cmd << EOF
          -qf procedures/16269_bivariate_axis_analytics.sql
          -qf procedures/bivariate_axis_correlation.sql
          -qf procedures/calculate_system_indicators.sql
+         -qf procedures/check_new_indicator.sql
          -qf scripts/add_system_indicators_metadata.sql
 EOF
 

@@ -18,6 +18,6 @@ while true; do
     # indicator tasks are completed, but correlation tasks are not yet created - so that we're not mistakenly mark it as READY
     psql -1 -qc "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"   \
             -qf scripts/create_correlation_tasks.sql  \
-            -qf scripts/update_indicators_state.sql
+            -qtf scripts/update_indicators_state.sql
     sleep 20
 done
