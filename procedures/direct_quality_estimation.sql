@@ -28,7 +28,7 @@ begin
         when one_uuid then
             den_value := '1.';
         end case;
-        execute 'create temp view stat as
+        execute 'create temp view tmp_stat as
         with averages_num as (
             select h3_cell_to_parent(h3) as h3_parent,
                    avg(indicator_value)  as agg_value
@@ -47,7 +47,7 @@ begin
 
     else
         -- 1. for hexagons of resolution 1..5 group values by common parent hexagon and calculate the average inside a parent
-        execute 'create temp view stat as
+        execute 'create temp view tmp_stat as
         with averages_num as (
             select h3_cell_to_parent(h3) as h3_parent,
             avg(indicator_value)  as agg_value
@@ -93,7 +93,7 @@ begin
                 -- does the denominator cover all of the cells where numerator is present?
                 * (count(*) filter (where numerator_value != 0 and denominator_value != 0))::float
                 / nullif((count(*) filter (where numerator_value != 0)), 0) as quality
-             from stat), 0)
+             from tmp_stat), 0)
     where numerator_uuid = x_numerator_uuid
       and denominator_uuid = x_denominator_uuid;
 end;
