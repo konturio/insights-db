@@ -10,8 +10,6 @@ declare
     percentiles float[] := '{.33, .5, .66}';
     area_km2_uuid uuid;
     one_uuid uuid;
-    indicator_id uuid;
-    num_value text;
     den_value text;
 begin
     select internal_id into area_km2_uuid from bivariate_indicators_metadata
@@ -20,9 +18,8 @@ begin
     select internal_id into one_uuid from bivariate_indicators_metadata
     where owner = 'insights-db' and param_id = 'one';
 
-    if x_numerator_uuid in (area_km2_uuid, one_uuid) and x_denominator_uuid in (area_km2_uuid, one_uuid) then
-        -- shortcut if both indicators are system-
-        -- TODO wht do I do
+    if x_numerator_uuid in (area_km2_uuid, one_uuid) then
+        -- we don't need such axis
         return;
     end if;
 
@@ -39,30 +36,18 @@ begin
         percentiles = '{.5}';
     end if;
 
-    if x_numerator_uuid in (area_km2_uuid, one_uuid) or x_denominator_uuid in (area_km2_uuid, one_uuid) then
-        case x_numerator_uuid
-        when area_km2_uuid then
-            num_value := 'h3_cell_area(h3)';
-        when one_uuid then
-            num_value := '1.';
-        else
-            num_value := 'indicator_value';
-            indicator_id := x_numerator_uuid;
-        end case;
+    if x_denominator_uuid in (area_km2_uuid, one_uuid) then
         case x_denominator_uuid
         when area_km2_uuid then
             den_value := 'h3_cell_area(h3)';
         when one_uuid then
             den_value := '1.';
-        else
-            den_value := 'indicator_value';
-            indicator_id := x_denominator_uuid;
         end case;
 
         execute 'create temp view tmp_axis as
-        select h3, '|| num_value ||' / nullif('|| den_value ||', 0) m
+        select h3, indicator_value / '|| den_value ||' m
         from stat_h3_transposed
-        where indicator_uuid = ' || quote_literal(indicator_id);
+        where indicator_uuid = ' || quote_literal(x_numerator_uuid);
     else
         -- common case: select both indicators from db
         execute 'create temp view tmp_axis as
