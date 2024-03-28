@@ -19,7 +19,7 @@ begin
     select into corr_sql string_agg(
         replace(replace(replace(replace(replace(replace(
             format('corr(%s/nullif(%s, 0), %s/nullif(%s, 0))', x_num, x_den, y_num, y_den),
-            area_km2_uuid::text, 'h3_cell_area(h3)'),
+            area_km2_uuid::text, 'h3_get_hexagon_area_avg(h3_get_resolution(h3))'),
             one_uuid::text, '1.'),
             A::text, 'x_num.indicator_value'),
             B::text, 'x_den.indicator_value'),
