@@ -1,9 +1,11 @@
 \set x_numerator_uuid       '\'19dfc858-69c9-40a9-b8e9-8f5dcccb087c\'::uuid'
+--\set x_numerator_uuid       '\'b7f516f2-3944-4d80-b768-d811ef9b663d\'::uuid'
 \set x_denominator_uuid     '\'eeeedddd-dddd-dddd-dddd-ddddddddeeee\'::uuid'
 
 --
 -- common case: both indicators are from user
 --
+--explain (analyze, buffers, settings, verbose)
 with averages_num as (
     select h3_cell_to_parent(h3) as h3_parent,
     avg(indicator_value)  as agg_value
@@ -51,6 +53,7 @@ select
 --
 \set x_denominator_uuid     '\'00000000-0000-0000-0000-000000000000\'::uuid'
 
+--explain (analyze, buffers, settings, verbose)
 with averages_num as (
     select h3_cell_to_parent(h3) as h3_parent,
            avg(indicator_value)  as agg_value
@@ -62,9 +65,9 @@ with averages_num as (
     order by h3_parent),
 stat as (
     select a.indicator_value as numerator_value,
-           h3_cell_area(h3)  as denominator_value,
-           a.indicator_value / nullif(h3_cell_area(h3), 0) as actual_norm_value,
-           b.agg_value / nullif(h3_cell_area(h3), 0) as agg_norm_value
+           h3_get_hexagon_area_avg(h3_get_resolution(h3))  as denominator_value,
+           a.indicator_value / nullif(h3_get_hexagon_area_avg(h3_get_resolution(h3)), 0) as actual_norm_value,
+           b.agg_value / nullif(h3_get_hexagon_area_avg(h3_get_resolution(h3)), 0) as agg_norm_value
     from stat_h3_transposed a
     join averages_num b on (a.indicator_uuid = :x_numerator_uuid and a.h3 = b.h3_parent))
 
