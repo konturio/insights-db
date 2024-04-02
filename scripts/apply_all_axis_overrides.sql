@@ -15,13 +15,15 @@ set
     p25_label   = coalesce(b.p25_label, a.p25_label),
     p75_label   = coalesce(b.p75_label, a.p75_label)
 from bivariate_axis_overrides b
+join bivariate_indicators_metadata num on b.numerator_id = num.external_id
+join bivariate_indicators_metadata den on b.denominator_id = den.external_id
 where
-    a.numerator_uuid = b.numerator_id and
-    a.denominator_uuid = b.denominator_id;
+    a.numerator_uuid = num.internal_id and
+    a.denominator_uuid = den.internal_id;
 
 get diagnostics rows_updated = row_count;
 if rows_updated > 0 then
-    raise notice 'status changed for % indicators', rows_updated;
+    raise notice 'overrides applied for % indicators', rows_updated;
 end if;
 
 end $$;
