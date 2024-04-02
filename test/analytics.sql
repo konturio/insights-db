@@ -1,13 +1,13 @@
 \set x_numerator_uuid       '\'19dfc858-69c9-40a9-b8e9-8f5dcccb087c\'::uuid'
 --\set x_numerator_uuid       '\'5a7736f6-1ff7-408b-b722-2a9d58ff733c\'::uuid'  -- seq scan on test db
 \set x_denominator_uuid     '\'eeeedddd-dddd-dddd-dddd-ddddddddeeee\'::uuid'
-\x
+--\x
 
 --
 -- case when denominator is 'area_km2'
 --
-
---explain verbose --(analyze, buffers, settings, verbose)
+set work_mem='10GB';
+explain (analyze, buffers, settings, verbose)
 with statistics as (select h3_get_resolution(h3) as r,
                        jsonb_build_object(
                                'sum', nullif(sum(m), 0),
@@ -24,6 +24,8 @@ with statistics as (select h3_get_resolution(h3) as r,
                 from stat_h3_transposed,
 lateral (
     select indicator_value / h3_get_hexagon_area_avg(h3_get_resolution(h3)) as m
+    -- h3_cell_area is very slow, the query never ends
+    -- select indicator_value / h3_cell_area(h3) as m
 ) z
 where indicator_uuid = :x_numerator_uuid
                 group by r
