@@ -41,7 +41,7 @@ begin
     raise notice '% has prev version %: regr slope %, intercept %, fill_ratio %', x_numerator_uuid, prev_version, slope, intercept, fill_ratio;
 
     if slope between 0.999 and 1.001 and intercept between -0.01 and 0.01 and fill_ratio between 0.99 and 1.01 then
-        raise notice 'discarding % indicator and all related tasks', prev_version;
+        raise notice 'discarding % indicator and all related tasks', x_numerator_uuid;
 
         delete from task_queue
         where x_numerator_id = x_numerator_uuid or x_denominator_id = x_numerator_uuid or y_numerator_id = x_numerator_uuid or y_denominator_id = x_numerator_uuid;
@@ -49,9 +49,8 @@ begin
         update bivariate_indicators_metadata
         set state = 'OUTDATED'
         where internal_id = x_numerator_uuid;
-        raise notice 'discarding % indicator and all related tasks', prev_version;
     else
-        raise notice 'indicator % stays in db', prev_version;
+        raise notice 'indicator % stays in db', x_numerator_uuid;
     end if;
 
 end;

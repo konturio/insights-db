@@ -7,8 +7,8 @@ insert into bivariate_indicators_metadata
 values
 ('one', :one_uuid, :one_uuid, '1', 'insights-db', 'NEW', true,
  '["Numbers © Muḥammad ibn Mūsā al-Khwārizmī"]'::json, '[["neutral"], ["neutral"]]'::jsonb,
- '', 'World', 'static', null, false),
+ '', 'World', 'static', null, true),
 ('area_km2', :area_km2_uuid, :area_km2_uuid, 'Area', 'insights-db', 'NEW', true,
  '["Concept of areas © Brahmagupta, René Descartes"]'::json, '[["neutral"], ["neutral"]]'::jsonb,
- '', 'World', 'static', 'km2', false)
+ '', 'World', 'static', 'km2', true)
  on conflict do nothing

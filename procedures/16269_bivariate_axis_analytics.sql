@@ -40,7 +40,9 @@ begin
     if x_denominator_uuid in (area_km2_uuid, one_uuid) then
         case x_denominator_uuid
         when area_km2_uuid then
-            den_value := 'h3_cell_area(h3)';
+            -- TODO should not use approx area for this task, but h3_cell_area is toooo slow
+            -- https://kontur.fibery.io/Tasks/Task/fix-area-calculation-for-analytics-task-18169
+            den_value := 'h3_get_hexagon_area_avg(h3_get_resolution(h3))';
         when one_uuid then
             den_value := '1.';
         end case;
