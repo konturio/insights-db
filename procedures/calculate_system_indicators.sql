@@ -13,11 +13,11 @@ begin
 
     select internal_id into area_km2_uuid
     from bivariate_indicators_metadata
-    where owner = 'insights-db' and param_id = 'area_km2';
+    where owner = 'disaster.ninja' and param_id = 'area_km2';
 
     select internal_id into one_uuid
     from bivariate_indicators_metadata
-    where owner = 'insights-db' and param_id = 'one';
+    where owner = 'disaster.ninja' and param_id = 'one';
 
     if x_numerator_uuid = one_uuid or x_numerator_uuid = area_km2_uuid then
         -- skip system indicators
