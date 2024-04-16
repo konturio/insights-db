@@ -17,6 +17,7 @@ first 2 tasks save the results into `bivariate_axis_v2`, and the last one writes
 * **overriding bivariate axis labels and stops** with custom values - updates `bivariate_axis_v2`
 * **changing indicator statuses** - updates `bivariate_indicators_metadata`
 * **deleting outdated indicators** - removes from `bivariate_indicators_metadata` and `stat_h3_transposed`
+* **calculating boundaries h3 hexagons** - fills data into stat_h3_geom
 
 ## Processes flowchart
 
