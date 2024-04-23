@@ -27,6 +27,10 @@ begin
         perform from task_queue
         where task_type = 'system_indicators'
         for update;
+        -- also lock analytics tasks, they should wait until system indicators are calculated
+        perform from task_queue
+        where task_type = 'analytics' and x_numerator_id = x_num
+        for update;
 
     elsif task = 'check_new_indicator' then
         -- lock all tasks with new indicator until we perform some checks on it.
