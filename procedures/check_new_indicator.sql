@@ -22,6 +22,7 @@ begin
     select internal_id into prev_version
     from bivariate_indicators_metadata
     where external_id = external_uuid and internal_id != x_numerator_uuid and date < upload_date
+      and state != 'OUTDATED'
     order by date
     limit 1;
 
