@@ -32,7 +32,7 @@ select
     case
         when x_denominator_uuid = y_numerator_uuid or x_denominator_uuid = y_denominator_uuid
         then 10 -- set low priority for tasks with repeating UUIDs: we can catch them while calculating other tasks
-        else 4
+        else 5
     end,
     'correlations',
     x_numerator_uuid, x_denominator_uuid, y_numerator_uuid, y_denominator_uuid
