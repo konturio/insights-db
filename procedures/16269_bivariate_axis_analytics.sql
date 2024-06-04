@@ -73,8 +73,8 @@ begin
     execute 'with statistics as (select h3_get_resolution(h3) as r,
                                jsonb_build_object(
                                        ''sum'', nullif(sum(m), 0),
-                                       ''min'', min(m) filter (where m != 0),
-                                       ''max'', max(m) filter (where m != 0),
+                                       ''min'', min(m),
+                                       ''max'', max(m),
                                        ''mean'', nullif(avg(m), 0),
                                        ''stddev'', nullif(stddev(m), 0)
                                    )
