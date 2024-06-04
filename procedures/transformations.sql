@@ -66,7 +66,7 @@ begin
         union all
         select
                 'cube_root',
-                array_agg(pow(x, 1/3.)),
+                array_agg(pow(abs(x), 1/3.)),
                 count(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
                 stddev(pow(x, 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
                 avg(pow(x, 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
