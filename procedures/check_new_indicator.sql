@@ -34,7 +34,7 @@ begin
     select
         regr_slope(a.indicator_value, nullif(b.indicator_value, 0)),
         regr_intercept(a.indicator_value, nullif(b.indicator_value, 0)),
-        count(a.indicator_value)::double precision / count(b.indicator_value)
+        count(a.indicator_value)::double precision / nullif(count(b.indicator_value), 0)
     into slope, intercept, fill_ratio
     from (select h3, indicator_value from stat_h3_transposed where indicator_uuid = x_numerator_uuid order by h3) a
     full join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = prev_version order by h3) b using(h3);

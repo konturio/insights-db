@@ -27,9 +27,15 @@ begin
         perform from task_queue
         where task_type = 'system_indicators'
         for update;
-        -- also lock analytics tasks, they should wait until system indicators are calculated
+        -- also lock analytics + transformations tasks, they should wait until system indicators are calculated
         perform from task_queue
-        where task_type = 'analytics' and x_numerator_id = x_num
+        where task_type in ('analytics', 'transformations') and x_numerator_id = x_num
+        for update;
+
+    elsif task = 'analytics' then
+        -- lock transformations tasks, they should wait until analytics is calculated for layers
+        perform from task_queue
+        where task_type = 'transformations' and x_numerator_id = x_num and x_denominator_id = x_den
         for update;
 
     elsif task = 'check_new_indicator' then
@@ -61,6 +67,8 @@ begin
           call direct_quality_estimation(x_num, x_den);
         when 'analytics' then
           call bivariate_axis_analytics(x_num, x_den);
+        when 'transformations' then
+          call calculate_transformations(x_num, x_den);
         when 'correlations' then
           call update_correlation(x_num, x_den, y_num, y_den);
         else
