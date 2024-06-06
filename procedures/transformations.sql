@@ -99,7 +99,7 @@ begin
             final_mean,
             greatest(min(x), final_mean-3*final_stddev),
             least(max(x), final_mean+3*final_stddev),
-            sum(pow((x-final_mean)/final_stddev, 3))*n::float/(n-1)/(n-2)
+            sum(pow((x-final_mean)/(final_stddev+2.220446049250313e-16::double precision), 3))*n::float/(n-1)/(n-2)
         from transformations, lateral unnest(transformations.points) x
         group by transformation, n, final_stddev, final_mean
     ),
