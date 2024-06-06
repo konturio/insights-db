@@ -66,10 +66,10 @@ begin
         union all
         select
                 'cube_root',
-                array_agg(pow(abs(x), 1/3.)),
+                array_agg(sign(x) * pow(abs(x), 1/3.)),
                 count(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                stddev(pow(x, 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                avg(pow(x, 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
+                stddev(sign(x) * pow(abs(x), 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
+                avg(sign(x) * pow(abs(x), 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
         from hist_bounds, lateral unnest(p) x
         union all
         select
