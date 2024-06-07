@@ -47,48 +47,59 @@ begin
             select numerator.indicator_value / nullif(denominator.indicator_value, 0) as m
         ) z
     ),
+    range as (
+        select
+            x,
+            sign(x) * sqrt(abs(x)) sqrt_x,
+            sign(x) * pow(abs(x), 1/3.) cube_root_x,
+            log10(x - layer_min + 1) log_x,
+            log10(x - layer_min + 2.220446049250313e-16::double precision) log_epsilon_x,
+            low,
+            high
+        from hist_bounds,
+             lateral unnest(p) x,
+             lateral (select new_mean - 3*new_stddev low, new_mean + 3*new_stddev high) z
+    ),
     transformations(transformation, points, n, final_stddev, final_mean) as (
         select 
                 'no',
                 array_agg(x),
-                count(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                stddev(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                avg(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
-        from hist_bounds, lateral unnest(p) x
+                count(x) filter (where x between low and high),
+                stddev(x) filter (where x between low and high),
+                avg(x) filter (where x between low and high)
+        from range
         union all
         select
                 'sqrt',
-                array_agg(sign(x) * sqrt(abs(x))),
-                count(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                stddev(sign(x) * sqrt(abs(x))) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                avg(sign(x) * sqrt(abs(x))) filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
-        from hist_bounds, lateral unnest(p) x
+                array_agg(sqrt_x),
+                count(x) filter (where x between low and high),
+                stddev(sqrt_x) filter (where x between low and high),
+                avg(sqrt_x) filter (where x between low and high)
+        from range
         union all
         select
                 'cube_root',
-                array_agg(sign(x) * pow(abs(x), 1/3.)),
-                count(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                stddev(sign(x) * pow(abs(x), 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                avg(sign(x) * pow(abs(x), 1/3.)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
-        from hist_bounds, lateral unnest(p) x
+                array_agg(cube_root_x),
+                count(x) filter (where x between low and high),
+                stddev(cube_root_x) filter (where x between low and high),
+                avg(cube_root_x) filter (where x between low and high)
+        from range
         union all
         select
                 'log',
-                array_agg(log10(x - layer_min + 1)),
-                count(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                stddev(log10(x - layer_min + 1)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                avg(log10(x - layer_min + 1)) filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
-        from hist_bounds, lateral unnest(p) x
+                array_agg(log_x),
+                count(x) filter (where x between low and high),
+                stddev(log_x) filter (where x between low and high),
+                avg(log_x) filter (where x between low and high)
+        from range
         union all
         select
                 'log_epsilon',
-                array_agg(log10(x - layer_min + 2.220446049250313e-16::double precision)),
-                count(x) filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                stddev(log10(x - layer_min + 2.220446049250313e-16::double precision))
-                    filter (where x-new_mean between -3*new_stddev and 3*new_stddev),
-                avg(log10(x - layer_min + 2.220446049250313e-16::double precision))
-                    filter (where x-new_mean between -3*new_stddev and 3*new_stddev)
-        from hist_bounds, lateral unnest(p) x
+                array_agg(log_epsilon_x),
+                count(x) filter (where x between low and high),
+                stddev(log_epsilon_x) filter (where x between low and high),
+                avg(log_epsilon_x) filter (where x between low and high)
+        from range
     ),
     stats(transformation, points, min, stddev, mean, lower_bound, upper_bound, skew) as (
         select
