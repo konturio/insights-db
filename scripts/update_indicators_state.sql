@@ -5,14 +5,8 @@ with indicators_with_tasks as (
     union all select y_denominator_id from task_queue
 ),
 -- select all versions of indicators where at least 1 version is NEW and without pending tasks
--- and then select only 2 oldest versions of such indicators
 indicators_to_update as (
-    select
-        internal_id
-    from (
-        select
-            internal_id,
-            row_number() over (partition by external_id order by date) num
+        select internal_id
         from bivariate_indicators_metadata
         where
                 state != 'OUTDATED'
@@ -23,8 +17,6 @@ indicators_to_update as (
                         state = 'NEW'
                     and internal_id not in (select * from indicators_with_tasks)
             )
-    ) t
-    where num <= 2
 )
 
 -- for selected indicator versions change state READY -> OUTDATED, NEW -> READY
@@ -34,3 +26,16 @@ set
 where
     internal_id in (select internal_id from indicators_to_update)
 returning 'status change', param_id, state, internal_id;
+
+-- now there might be duplicated indicators in state READY, need to outdate oldest of them
+update bivariate_indicators_metadata
+set
+    state = 'OUTDATED'
+where
+    state = 'READY' and
+    internal_id not in (
+        select distinct on(external_id) internal_id
+        from bivariate_indicators_metadata
+        where state = 'READY'
+        order by external_id, date desc
+    );
