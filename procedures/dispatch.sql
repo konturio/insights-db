@@ -63,8 +63,9 @@ begin
     end if;
 
     case task
-        when 'check_new_indicator' then
-          call check_new_indicator(x_num);
+        -- simultaneous threads with check_new_indicator block each other terribly. task disabled until locks are fixed
+        -- when 'check_new_indicator' then
+        --   call check_new_indicator(x_num);
         when 'system_indicators' then
           call calculate_system_indicators(x_num);
         when 'quality' then
@@ -76,9 +77,9 @@ begin
         when 'correlations' then
           call update_correlation(x_num, x_den, y_num, y_den);
         else
-          raise notice 'unknown task type';
+          raise notice 'unknown task type %', task;
     end case;
-    raise notice 'end % task tid=% time=%', task, task_id, date_trunc('second', clock_timestamp() - t);
+    raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
 
     delete from task_queue where ctid = task_id;
 end;
@@ -100,4 +101,4 @@ begin
 
     return indicator_count = 0;
 end;
-$$ language plpgsql;
+$$ language plpgsql parallel safe;
