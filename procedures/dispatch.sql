@@ -17,7 +17,7 @@ begin
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
-    order by created_at, priority
+    order by priority, created_at
     for update skip locked
     limit 1;
 
@@ -55,12 +55,17 @@ begin
         perform pg_advisory_unlock(42);
     end if;
 
-
     raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
 
+    if indicator_inactive(x_num) or indicator_inactive(x_num) or indicator_inactive(x_num) or indicator_inactive(x_num) then
+        delete from task_queue where ctid = task_id;
+        return;
+    end if;
+
     case task
-        when 'check_new_indicator' then
-          call check_new_indicator(x_num);
+        -- simultaneous threads with check_new_indicator block each other terribly. task disabled until locks are fixed
+        -- when 'check_new_indicator' then
+        --   call check_new_indicator(x_num);
         when 'system_indicators' then
           call calculate_system_indicators(x_num);
         when 'quality' then
@@ -72,10 +77,28 @@ begin
         when 'correlations' then
           call update_correlation(x_num, x_den, y_num, y_den);
         else
-          raise notice 'unknown task type';
+          raise notice 'unknown task type %', task;
     end case;
-    raise notice 'end % task tid=% time=%', task, task_id, date_trunc('second', clock_timestamp() - t);
+    raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
 
     delete from task_queue where ctid = task_id;
 end;
 $$;
+
+
+create or replace function indicator_inactive(indicator_uuid uuid)
+returns bool as $$
+declare
+    indicator_count int;
+begin
+    select count(0) into indicator_count
+    from bivariate_indicators_metadata
+    where internal_id = indicator_uuid and state != 'OUTDATED';
+
+    if indicator_count = 0 then
+        raise notice '[%] cancelled task because indicator % no longer active', pg_backend_pid(), indicator_uuid;
+    end if;
+
+    return indicator_count = 0;
+end;
+$$ language plpgsql parallel safe;

@@ -1,8 +1,9 @@
+-- #18782: we can mark indicator as ready even if correlation task still not done
 with indicators_with_tasks as (
-              select x_numerator_id from task_queue
-    union all select x_denominator_id from task_queue
-    union all select y_numerator_id from task_queue
-    union all select y_denominator_id from task_queue
+              select x_numerator_id     from task_queue where task_type != 'correlations'
+    union all select x_denominator_id   from task_queue where task_type != 'correlations'
+    union all select y_numerator_id     from task_queue where task_type != 'correlations'
+    union all select y_denominator_id   from task_queue where task_type != 'correlations'
 ),
 -- select all versions of indicators where at least 1 version is NEW and without pending tasks
 indicators_to_update as (
