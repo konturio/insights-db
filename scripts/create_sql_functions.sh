@@ -14,12 +14,11 @@ read -r -d '' migrate_cmd << EOF
          -qf scripts/add_system_indicators_metadata.sql
 EOF
 
-eval $migrate_cmd
-
-while (( $? != 0 )); do
-    echo 'WARN: failed to create SQL functions'
-    sleep 10
-    eval $migrate_cmd
+while ! pg_isready -q; do
+    echo "postgres not ready, $0 is waiting..."
+    sleep 120
+    continue
 done
 
+eval $migrate_cmd
 echo 'successfully created SQL functions'
