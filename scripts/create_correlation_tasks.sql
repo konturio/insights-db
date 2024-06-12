@@ -10,17 +10,21 @@ with new_corr_axis as (
         b.numerator_uuid y_numerator_uuid,      -- may be base or not base
         b.denominator_uuid y_denominator_uuid   -- base
     from bivariate_axis_v2 a
-        join bivariate_indicators_metadata ma
-            on (a.numerator_uuid = ma.internal_id and not ma.is_base),
+        join bivariate_indicators_metadata xnum
+            on (a.numerator_uuid = xnum.internal_id and not xnum.is_base and xnum.state != 'OUTDATED')
+        join bivariate_indicators_metadata xden
+            on (a.denominator_uuid = xden.internal_id and xden.state != 'OUTDATED'),
     bivariate_axis_v2 b
-        join bivariate_indicators_metadata mb
-            on (b.numerator_uuid = mb.internal_id)
+        join bivariate_indicators_metadata ynum
+            on (b.numerator_uuid = ynum.internal_id and ynum.state != 'OUTDATED')
+        join bivariate_indicators_metadata yden
+            on (b.denominator_uuid = yden.internal_id and yden.state != 'OUTDATED')
     where
             a.quality > .5
         and b.quality > .5
         and a.numerator_uuid != b.numerator_uuid
         -- don't calculate correlation between different versions of the same indicator
-        and ma.external_id != mb.external_id
+        and xnum.external_id != ynum.external_id
     except
     select x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
     from bivariate_axis_correlation_v2

@@ -1,5 +1,5 @@
 -- #18782: we can mark indicator as ready even if correlation task still not done
-with indicators_with_tasks as (
+with indicators_with_tasks(indicator_uuid) as (
               select x_numerator_id     from task_queue where task_type != 'correlations'
     union all select x_denominator_id   from task_queue where task_type != 'correlations'
     union all select y_numerator_id     from task_queue where task_type != 'correlations'
@@ -16,7 +16,7 @@ indicators_to_update as (
                 from bivariate_indicators_metadata
                 where
                         state = 'NEW'
-                    and internal_id not in (select * from indicators_with_tasks)
+                    and internal_id not in (select distinct indicator_uuid from indicators_with_tasks where indicator_uuid is not null)
             )
 )
 
