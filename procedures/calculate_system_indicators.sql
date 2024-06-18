@@ -48,7 +48,6 @@ begin
 
     get diagnostics rows_inserted = row_count;
     if rows_inserted > 0 then
-        analyze stat_h3_transposed;
         raise notice 'inserted % rows', rows_inserted;
     end if;
 

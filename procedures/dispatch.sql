@@ -21,6 +21,8 @@ begin
     for update skip locked
     limit 1;
 
+    execute 'set application_name to ' || quote_literal('insights-db ' || coalesce(task, ''));
+
     if task = 'system_indicators' then
         -- only 1 'system_indicators' task should be executed at a time to avoid unnecessary computations.
         -- lock all other tasks and release them in the end, without deleting them
