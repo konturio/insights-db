@@ -114,7 +114,7 @@ begin
     stats(transformation, points, min, stddev, mean, lower_bound, upper_bound, skew) as (
         select
             transformation,
-            array_agg(round(x::numeric, 2)),
+            array_agg(x),
             layer_min, -- value to subtract under log()
             final_stddev,
             final_mean,
