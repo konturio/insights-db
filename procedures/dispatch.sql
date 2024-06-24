@@ -5,6 +5,7 @@ $$
 declare
     task_id tid;
     task    text;
+    rc      text;
     x_num   uuid;
     x_den   uuid;
     y_num   uuid;
@@ -12,6 +13,10 @@ declare
     declare t timestamptz := clock_timestamp();
 begin
 
+    -- custom setting indicating the status of the task
+    set task.rc = 0;
+
+    -- task selection is exclusively blocked, so that each process can block more than 1 task if there's dependency
     perform pg_advisory_lock(42);
 
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
@@ -81,9 +86,13 @@ begin
         else
           raise notice 'unknown task type %', task;
     end case;
-    raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
 
-    delete from task_queue where ctid = task_id;
+    execute 'show task.rc' into rc;
+    if rc = '0' then
+        delete from task_queue where ctid = task_id;
+        raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
+    end if;
+    -- if rc != 0, task stays in db to recalculate it later
 end;
 $$;
 
