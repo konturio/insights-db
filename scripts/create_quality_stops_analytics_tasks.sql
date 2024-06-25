@@ -43,8 +43,8 @@ single_indicator_tasks as (
     from indicator_list
     join bivariate_indicators_metadata on internal_id = indicator_uuid and state = 'NEW',
     (values
-        (0., 'check_new_indicator'),
-        (3., 'system_indicators')
+        --(0., 'check_new_indicator'), -- task is disabled currently
+        (0., 'system_indicators') -- should have higher priority than analytics and transformations
     ) tasks (priority, task_type)
 )
 
