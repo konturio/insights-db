@@ -72,7 +72,7 @@ begin
         from range
         union all
         select
-                'sqrt',
+                'square_root',
                 array_agg(sqrt_x),
                 count(x) filter (where x between low and high),
                 min(sqrt_x) filter (where x between low and high),
