@@ -23,6 +23,7 @@ indicators_to_update as (
 -- for selected indicator versions change state READY -> OUTDATED, NEW -> READY
 update bivariate_indicators_metadata
 set
+    last_updated = current_timestamp at time zone 'utc',
     state = case state when 'READY' then 'OUTDATED' else 'READY' end
 where
     internal_id in (select internal_id from indicators_to_update)
