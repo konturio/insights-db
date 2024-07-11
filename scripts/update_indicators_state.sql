@@ -40,4 +40,12 @@ where
         from bivariate_indicators_metadata
         where state = 'READY'
         order by external_id, date desc
-    );
+    )
+returning 'status change', param_id, state, internal_id;
+
+-- tell dispatcher to remove tasks related to outdated indicators
+insert into task_queue
+    (priority, task_type, x_numerator_id)
+select -1, 'remove_outdated_tasks', internal_id
+from bivariate_indicators_metadata where state = 'OUTDATED'
+on conflict do nothing;

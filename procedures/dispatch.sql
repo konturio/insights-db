@@ -26,7 +26,13 @@ begin
     for update skip locked
     limit 1;
 
+    if task_id is null then
+        -- no tasks left, exit
+        return;
+    end if;
+
     execute 'set application_name to ' || quote_literal('insights-db ' || coalesce(task, ''));
+    raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
 
     if task = 'system_indicators' then
         -- only 1 'system_indicators' task should be executed at a time to avoid unnecessary computations.
@@ -38,6 +44,18 @@ begin
         perform from task_queue
         where task_type in ('analytics', 'transformations') and x_numerator_id = x_num
         for update;
+
+    elsif task = 'remove_outdated_tasks' then
+        -- meta-task to cleanup queue.
+        -- x_num is outdated indicator - remove all tasks with it so no other process locks them
+        delete from task_queue
+        where ctid in (
+            select ctid from task_queue
+            where x_numerator_id = x_num or x_denominator_id = x_num or y_numerator_id = x_num or y_denominator_id = x_num
+            for update skip locked
+        );
+        raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
+        return;
 
     elsif task = 'analytics' then
         -- lock transformations tasks, they should wait until analytics is calculated for layers
@@ -51,10 +69,6 @@ begin
         perform from task_queue
         where x_numerator_id = x_num or x_denominator_id = x_num or y_numerator_id = x_num or y_denominator_id = x_num
         for update;
-
-    elsif task_id is null then
-        -- no tasks left, exit
-        return;
     end if;
 
     if task != 'correlations' then
@@ -62,9 +76,7 @@ begin
         perform pg_advisory_unlock(42);
     end if;
 
-    raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
-
-    if indicator_inactive(x_num) or indicator_inactive(x_num) or indicator_inactive(x_num) or indicator_inactive(x_num) then
+    if indicator_inactive(x_num) or indicator_inactive(x_den) or indicator_inactive(y_num) or indicator_inactive(y_den) then
         delete from task_queue where ctid = task_id;
         return;
     end if;
@@ -102,6 +114,10 @@ returns bool as $$
 declare
     indicator_count int;
 begin
+    if indicator_uuid is null then
+        return false;
+    end if;
+
     select count(0) into indicator_count
     from bivariate_indicators_metadata
     where internal_id = indicator_uuid and state != 'OUTDATED';
