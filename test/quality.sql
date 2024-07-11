@@ -67,7 +67,7 @@ stat as (
     select a.indicator_value as numerator_value,
            h3_get_hexagon_area_avg(h3_get_resolution(h3))  as denominator_value,
            a.indicator_value / nullif(h3_get_hexagon_area_avg(h3_get_resolution(h3)), 0) as actual_norm_value,
-           b.agg_value / nullif(h3_get_hexagon_area_avg(h3_get_resolution(h3)), 0) as agg_norm_value
+           b.agg_value / nullif(h3_get_hexagon_area_avg(h3_get_resolution(h3)+1), 0) as agg_norm_value
     from stat_h3_transposed a
     join averages_num b on (a.indicator_uuid = :x_numerator_uuid and a.h3 = b.h3_parent))
 
