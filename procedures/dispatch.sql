@@ -19,6 +19,7 @@ begin
     -- task selection is exclusively blocked, so that each process can block more than 1 task if there's dependency
     perform pg_advisory_lock(42);
 
+    set application_name to 'insights-db selecting task...';
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
@@ -39,21 +40,23 @@ begin
         -- lock all other tasks and release them in the end, without deleting them
         perform from task_queue
         where task_type = 'system_indicators'
-        for update;
+        for update skip locked;
         -- also lock analytics + transformations tasks, they should wait until system indicators are calculated
         perform from task_queue
         where task_type in ('analytics', 'transformations') and x_numerator_id = x_num
-        for update;
+        for update skip locked;
 
     elsif task = 'remove_outdated_tasks' then
         -- meta-task to cleanup queue.
         -- x_num is outdated indicator - remove all tasks with it so no other process locks them
+        perform pg_advisory_unlock(42);
         delete from task_queue
         where ctid in (
             select ctid from task_queue
-            where x_numerator_id = x_num or x_denominator_id = x_num or y_numerator_id = x_num or y_denominator_id = x_num
+            where task_type != 'remove_outdated_tasks' and x_numerator_id = x_num or x_denominator_id = x_num or y_numerator_id = x_num or y_denominator_id = x_num
             for update skip locked
         );
+        delete from task_queue where ctid = task_id;
         raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
         return;
 
@@ -61,14 +64,14 @@ begin
         -- lock transformations tasks, they should wait until analytics is calculated for layers
         perform from task_queue
         where task_type = 'transformations' and x_numerator_id = x_num and x_denominator_id = x_den
-        for update;
+        for update skip locked;
 
     elsif task = 'check_new_indicator' then
         -- lock all tasks with new indicator until we perform some checks on it.
         -- tasks will be deleted if the check fails
         perform from task_queue
         where x_numerator_id = x_num or x_denominator_id = x_num or y_numerator_id = x_num or y_denominator_id = x_num
-        for update;
+        for update skip locked;
     end if;
 
     if task != 'correlations' then
