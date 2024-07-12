@@ -11,7 +11,6 @@ declare
     den_value text;
     agg_den_value text;
     cte_sql text;
-    prev_quality double precision;
 begin
     select internal_id into area_km2_uuid from bivariate_indicators_metadata
     where owner = 'disaster.ninja' and param_id = 'area_km2';
@@ -25,19 +24,6 @@ begin
     end if;
 
     if x_denominator_uuid in (area_km2_uuid, one_uuid) then
-        -- quality is the same for all axis with system indicator as denominator
-        select quality into prev_quality from bivariate_axis_v2
-        where numerator_uuid = x_numerator_uuid and denominator_uuid in (area_km2_uuid, one_uuid)
-        limit 1;
-        if prev_quality is not null then
-            update bivariate_axis_v2 a
-            set quality = prev_quality
-            where numerator_uuid = x_numerator_uuid
-              and denominator_uuid = x_denominator_uuid;
-            raise notice 'skip quality calc for %/%', x_numerator_uuid, x_denominator_uuid;
-            return;
-        end if;
-
         case x_denominator_uuid
         when area_km2_uuid then
             den_value := 'h3_get_hexagon_area_avg(h3_get_resolution(h3))';
