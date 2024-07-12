@@ -9,6 +9,7 @@ declare
     area_km2_uuid uuid;
     one_uuid uuid;
     den_value text;
+    agg_den_value text;
     cte_sql text;
     prev_quality double precision;
 begin
@@ -40,8 +41,11 @@ begin
         case x_denominator_uuid
         when area_km2_uuid then
             den_value := 'h3_get_hexagon_area_avg(h3_get_resolution(h3))';
+            -- divide average child hexagon value by avg area of child hexagon (it has resolution +1)
+            agg_den_value := 'h3_get_hexagon_area_avg(h3_get_resolution(h3)+1)';
         when one_uuid then
             den_value := '1.';
+            agg_den_value := den_value;
         end case;
         cte_sql := '
         with averages_num as (
@@ -57,7 +61,7 @@ begin
             select a.indicator_value as numerator_value,
                    '||den_value||'  as denominator_value,
                    a.indicator_value / nullif('||den_value||', 0) as actual_norm_value,
-                   b.agg_value / nullif('||den_value||', 0) as agg_norm_value
+                   b.agg_value / nullif('||agg_den_value||', 0) as agg_norm_value
             from stat_h3_transposed a
             join averages_num b on (a.indicator_uuid = '|| quote_literal(x_numerator_uuid) ||' and a.h3 = b.h3_parent))';
 
