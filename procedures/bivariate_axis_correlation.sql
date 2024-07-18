@@ -50,7 +50,6 @@ drop procedure if exists update_correlation;
 create or replace procedure update_correlation(
     A uuid, B uuid, C uuid, D uuid)
     language plpgsql
-    set work_mem = '10GB'
 as
 $$
 declare
