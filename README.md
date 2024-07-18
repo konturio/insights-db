@@ -77,7 +77,7 @@ check bash processes. at least 4 of them should be present:
 
 10 /bin/bash -c while true; do psql -1 -f scripts/remove_outated_indicators.sql; sleep 5m; done
 12 /bin/bash -c while true; do psql -f scripts/apply_all_axis_overrides.sql; sleep 5m; done
-23 /bin/bash -c while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; psql -1 -c "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ" -f scripts/create_correlation_tasks.sql -f scripts/update_indicators_state.sql; sleep 1m; done
+23 /bin/bash -c while true; do psql -f scripts/create_quality_stops_analytics_tasks.sql; ...
 4092 /bin/bash -c while true; do seq `psql -c 'select count(0) from task_queue' -t` | parallel -j 3 -n0 "psql -q -c 'call dispatch()'"; sleep 1; done
 ```
 
@@ -94,7 +94,7 @@ update bivariate_indicators_metadata set state = 'NEW';
 run `make` targets:
 
 ```
-PGUSER=postgres bash start.sh
+INSIGHTS_API_URL=localhost:8625/insights-api PGUSER=postgres bash start.sh
 ```
 
 Note: replace `PGUSER=postgres` with any other user you've set up your local database
