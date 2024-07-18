@@ -2,7 +2,6 @@ drop procedure if exists check_new_indicator;
 
 create or replace procedure check_new_indicator(x_numerator_uuid uuid)
     language plpgsql
-    set work_mem = '10GB'
 as
 $$
 declare

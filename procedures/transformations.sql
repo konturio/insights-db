@@ -10,6 +10,7 @@ declare
     layer_min double precision;
     layer_mean double precision;
     layer_stddev double precision;
+    rc text;
 begin
     select internal_id into area_km2_uuid from bivariate_indicators_metadata
     where owner = 'disaster.ninja' and param_id = 'area_km2';
@@ -22,7 +23,10 @@ begin
         return;
     end if;
 
-    select min_value, mean_value, stddev_value into layer_min, layer_mean, layer_stddev from bivariate_axis_v2
+    -- bivariate_axis_v2.min is floor() of minimal value of all hexagons for all resolutions.
+    -- we take minimum at all resolutions so log(x-min+epsilon) doesn't break for any x for any resolution on front.
+    -- bivariate_axis_v2.mean_value and stddev_value are from 8 resolution - as further calculations are performed on 8 res only
+    select min, mean_value, stddev_value into layer_min, layer_mean, layer_stddev from bivariate_axis_v2
     where numerator_uuid = x_numerator_uuid and denominator_uuid = x_denominator_uuid;
 
     with hist_bounds(p, new_stddev, new_mean) as (
@@ -111,11 +115,10 @@ begin
                 avg(log_epsilon_x) filter (where x between low and high)
         from range
     ),
-    stats(transformation, points, min, stddev, mean, lower_bound, upper_bound, skew) as (
+    stats(transformation, points, stddev, mean, lower_bound, upper_bound, skew) as (
         select
             transformation,
             array_agg(x),
-            layer_min, -- value to subtract under log()
             final_stddev,
             final_mean,
             greatest(low, final_mean-3*final_stddev),

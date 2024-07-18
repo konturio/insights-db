@@ -2,7 +2,6 @@ drop procedure if exists calculate_system_indicators;
 
 create or replace procedure calculate_system_indicators(x_numerator_uuid uuid)
     language plpgsql
-    set work_mem = '10GB'
 as
 $$
 declare

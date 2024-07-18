@@ -2,7 +2,6 @@ drop procedure if exists direct_quality_estimation;
 
 create or replace procedure direct_quality_estimation(x_numerator_uuid uuid, x_denominator_uuid uuid)
     language plpgsql
-    set work_mem = '10GB'
 as
 $$
 declare

@@ -1,12 +1,15 @@
 -- #18782: we can mark indicator as ready even if correlation task still not done
-with indicators_with_tasks(indicator_uuid) as (
-              select x_numerator_id     from task_queue where task_type != 'correlations'
-    union all select x_denominator_id   from task_queue where task_type != 'correlations'
-    union all select y_numerator_id     from task_queue where task_type != 'correlations'
-    union all select y_denominator_id   from task_queue where task_type != 'correlations'
-),
+create temp table indicators_with_tasks as
+with uuids(indicator_uuid) as (
+              select x_numerator_id   from task_queue where task_type != 'correlations'
+    union all select x_denominator_id from task_queue where task_type != 'correlations'
+    union all select y_numerator_id   from task_queue where task_type != 'correlations'
+    union all select y_denominator_id from task_queue where task_type != 'correlations'
+)
+select distinct indicator_uuid from uuids where indicator_uuid is not null;
+
 -- select all versions of indicators where at least 1 version is NEW and without pending tasks
-indicators_to_update as (
+with indicators_to_update as (
         select internal_id
         from bivariate_indicators_metadata
         where
@@ -16,7 +19,7 @@ indicators_to_update as (
                 from bivariate_indicators_metadata
                 where
                         state = 'NEW'
-                    and internal_id not in (select distinct indicator_uuid from indicators_with_tasks where indicator_uuid is not null)
+                    and internal_id not in (select indicator_uuid from indicators_with_tasks)
             )
 )
 
@@ -47,5 +50,7 @@ returning 'status change', param_id, state, internal_id;
 insert into task_queue
     (priority, task_type, x_numerator_id)
 select -1, 'remove_outdated_tasks', internal_id
-from bivariate_indicators_metadata where state = 'OUTDATED'
+from bivariate_indicators_metadata
+join indicators_with_tasks on indicator_uuid = internal_id
+where state = 'OUTDATED'
 on conflict do nothing;

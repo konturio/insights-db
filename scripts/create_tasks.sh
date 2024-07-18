@@ -15,7 +15,7 @@ while true; do
 
     psql -qf scripts/create_quality_stops_analytics_tasks.sql
     psql -qf scripts/create_correlation_tasks.sql
-    psql -qt1f scripts/update_indicators_state.sql | tee >(grep -q 'status change' && curl -s -o /dev/null -w '[%{response_code}] cleaned insights cache\n' $INSIGHTS_API_URL/cache/cleanUp)
+    psql -qt1f scripts/update_indicators_state.sql | tee >(grep -q 'status change' && bash scripts/clean_insights_cache.sh)
 
     sleep 20
 done
