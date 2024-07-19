@@ -25,7 +25,13 @@ begin
     select ctid, task_type, x_numerator_id, x_denominator_id, y_numerator_id, y_denominator_id
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
-    order by priority, created_at
+    order by
+        -- correlations should be calculated after any other tasks
+        case when task_type = 'correlations' then 2 else 1 end,
+        -- sort by timestamp so that older indicators are calculated earlier
+        created_at,
+        -- tasks are created in batches with the same created_at for axis, need additional sorting by priority
+        priority
     for update skip locked
     limit 1;
 
