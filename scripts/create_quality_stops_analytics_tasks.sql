@@ -29,6 +29,8 @@ indicator_list as (
 -- create set of tasks for each new axis
 tasks as (
     select priority, task_type, numerator_uuid, denominator_uuid
+    -- priority is important for task dependencies: task that should wait for other tasks should have lower priority.
+    -- example: 'transformations' (priority 4) requires 'analytics' result (priority 2), so 'transformations' has lower priority
     from new_axis, (values
         (1., 'quality'),
         (2., 'analytics'),
