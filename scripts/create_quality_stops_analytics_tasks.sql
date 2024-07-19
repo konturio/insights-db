@@ -14,8 +14,8 @@ with new_axis as (
         b.internal_id denominator_uuid
     from bivariate_indicators_metadata a
     join bivariate_indicators_metadata b on
-        ((b.state = 'NEW' and a.state != 'OUTDATED')
-           or (a.state = 'NEW' and b.state != 'OUTDATED'))
+            b.state != 'OUTDATED'
+        and a.state != 'OUTDATED'
         and a.external_id != b.external_id
         and b.is_base
     on conflict (numerator_uuid, denominator_uuid)
@@ -25,8 +25,6 @@ with new_axis as (
 -- select distinct indicators included in axis
 indicator_list as (
     select distinct numerator_uuid indicator_uuid from new_axis
-    union
-    select distinct denominator_uuid indicator_uuid from new_axis
 ),
 -- create set of tasks for each new axis
 tasks as (
@@ -40,8 +38,7 @@ tasks as (
 -- create tasks for each new indicator
 single_indicator_tasks as (
     select priority, task_type, indicator_uuid, null::uuid
-    from indicator_list
-    join bivariate_indicators_metadata on internal_id = indicator_uuid and state = 'NEW',
+    from indicator_list,
     (values
         --(0., 'check_new_indicator'), -- task is disabled currently
         (0., 'system_indicators') -- should have higher priority than analytics and transformations
