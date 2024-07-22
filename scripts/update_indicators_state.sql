@@ -1,12 +1,16 @@
--- #18782: we can mark indicator as ready even if correlation task still not done
 create temp table indicators_with_tasks as
 with uuids(indicator_uuid) as (
-              select x_numerator_id   from task_queue where task_type != 'correlations'
-    union all select x_denominator_id from task_queue where task_type != 'correlations'
-    union all select y_numerator_id   from task_queue where task_type != 'correlations'
-    union all select y_denominator_id from task_queue where task_type != 'correlations'
+              select x_numerator_id   from task_queue where task_type != 'remove_outdated_tasks'
+    union all select x_denominator_id from task_queue where task_type != 'remove_outdated_tasks'
+    union all select y_numerator_id   from task_queue where task_type != 'remove_outdated_tasks'
+    union all select y_denominator_id from task_queue where task_type != 'remove_outdated_tasks'
 )
 select distinct indicator_uuid from uuids where indicator_uuid is not null;
+
+-- #18782: we can mark indicator as ready even if correlation task still not done.
+-- also can set READY if there are tasks with this indicator as denominator
+create temp table indicators_with_important_tasks as
+select distinct x_numerator_id indicator_uuid from task_queue where task_type != 'correlations' and x_numerator_id is not null;
 
 -- select all versions of indicators where at least 1 version is NEW and without pending tasks
 with indicators_to_update as (
@@ -19,7 +23,7 @@ with indicators_to_update as (
                 from bivariate_indicators_metadata
                 where
                         state = 'NEW'
-                    and internal_id not in (select indicator_uuid from indicators_with_tasks)
+                    and internal_id not in (select indicator_uuid from indicators_with_important_tasks)
             )
 )
 
