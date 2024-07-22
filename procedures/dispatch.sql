@@ -1,7 +1,6 @@
 create or replace procedure dispatch()
     language plpgsql
     set work_mem = '10GB'
-    set statement_timeout = '1h'  -- set timeout in case if postgres chose a bad plan. maybe plan will be better next time
 as
 $$
 declare
