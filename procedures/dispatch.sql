@@ -26,8 +26,13 @@ begin
       into task_id, task, x_num, x_den, y_num, y_den
     from task_queue
     order by
-        -- correlations should be calculated after any other tasks
-        case when task_type = 'correlations' then 2 else 1 end,
+        case task_type
+            -- better to remove obsolete tasks earlier to reduce queue
+            when 'remove_outdated_tasks' then 0
+            -- correlations should be calculated after any other tasks
+            when 'correlations' then 2
+            else 1
+        end,
         -- sort by timestamp so that older indicators are calculated earlier
         created_at,
         -- tasks are created in batches with the same created_at for axis, need additional sorting by priority
