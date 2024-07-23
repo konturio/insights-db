@@ -14,7 +14,7 @@ while true; do
     fi
 
     psql -qf scripts/create_quality_stops_analytics_tasks.sql
-    psql -qf scripts/create_correlation_tasks.sql
+    [ $RUN_CORRELATIONS = true ] && psql -qf scripts/create_correlation_tasks.sql
     psql -qt1f scripts/update_indicators_state.sql | tee >(grep -q 'status change' && bash scripts/clean_insights_cache.sh)
 
     sleep 20
