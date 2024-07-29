@@ -64,13 +64,13 @@ begin
              lateral unnest(p) x,
              lateral (select new_mean - 3*new_stddev low, new_mean + 3*new_stddev high) z
     ),
-    transformations(transformation, points, n, low, high, final_stddev, final_mean) as (
+    transformations(transformation, points, n, min_of_transformed, max_of_transformed, stddev_of_transformed, mean_of_transformed) as (
         select 
                 'no',
                 array_agg(x),
                 count(x) filter (where x between low and high),
-                min(x) filter (where x between low and high),
-                max(x) filter (where x between low and high),
+                min(x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
+                max(x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
                 stddev(x) filter (where x between low and high),
                 avg(x) filter (where x between low and high)
         from range
@@ -79,8 +79,8 @@ begin
                 'square_root',
                 array_agg(sqrt_x),
                 count(x) filter (where x between low and high),
-                min(sqrt_x) filter (where x between low and high),
-                max(sqrt_x) filter (where x between low and high),
+                min(sqrt_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
+                max(sqrt_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
                 stddev(sqrt_x) filter (where x between low and high),
                 avg(sqrt_x) filter (where x between low and high)
         from range
@@ -89,8 +89,8 @@ begin
                 'cube_root',
                 array_agg(cube_root_x),
                 count(x) filter (where x between low and high),
-                min(cube_root_x) filter (where x between low and high),
-                max(cube_root_x) filter (where x between low and high),
+                min(cube_root_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
+                max(cube_root_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
                 stddev(cube_root_x) filter (where x between low and high),
                 avg(cube_root_x) filter (where x between low and high)
         from range
@@ -99,8 +99,8 @@ begin
                 'log',
                 array_agg(log_x),
                 count(x) filter (where x between low and high),
-                min(log_x) filter (where x between low and high),
-                max(log_x) filter (where x between low and high),
+                min(log_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
+                max(log_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
                 stddev(log_x) filter (where x between low and high),
                 avg(log_x) filter (where x between low and high)
         from range
@@ -109,23 +109,24 @@ begin
                 'log_epsilon',
                 array_agg(log_epsilon_x),
                 count(x) filter (where x between low and high),
-                min(log_epsilon_x) filter (where x between low and high),
-                max(log_epsilon_x) filter (where x between low and high),
+                min(log_epsilon_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
+                max(log_epsilon_x) filter (where x between layer_mean - 3.*layer_stddev and layer_mean + 3.*layer_stddev),
                 stddev(log_epsilon_x) filter (where x between low and high),
                 avg(log_epsilon_x) filter (where x between low and high)
         from range
     ),
-    stats(transformation, points, stddev, mean, lower_bound, upper_bound, skew) as (
+    stats(transformation, points, stddev, mean, debug_max, lower_bound, upper_bound, skew) as (
         select
             transformation,
             array_agg(x),
-            final_stddev,
-            final_mean,
-            greatest(low, final_mean-3*final_stddev),
-            least(high, final_mean+3*final_stddev),
-            n::float/(n-1)/(n-2) * sum(pow((x-final_mean)/(final_stddev+2.220446049250313e-16::double precision), 3)) filter (where x between low and high)
+            stddev_of_transformed,
+            mean_of_transformed,
+            max_of_transformed,
+            greatest(min_of_transformed, mean_of_transformed-3*stddev_of_transformed),
+            least(max_of_transformed, mean_of_transformed+3*stddev_of_transformed),
+            n::float/(n-1)/(n-2) * sum(pow((x-mean_of_transformed)/(stddev_of_transformed+2.220446049250313e-16::double precision), 3)) filter (where x between min_of_transformed and max_of_transformed)
         from transformations, lateral unnest(transformations.points) x
-        group by transformation, n, final_stddev, final_mean, low, high
+        group by transformation, n, stddev_of_transformed, mean_of_transformed, min_of_transformed, max_of_transformed
     ),
     upd(j) as (select jsonb_agg(to_jsonb(t)) from stats t)
     update bivariate_axis_v2 ba
