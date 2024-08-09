@@ -44,7 +44,7 @@ begin
         return;
     end if;
 
-    execute 'set application_name to ' || quote_literal('insights-db ' || coalesce(task, ''));
+    execute 'set application_name to ' || quote_literal('insights-db ' || coalesce(task, '') || ' ' || coalesce(left(x_num::text,8),'') || ' ' || coalesce(left(x_den::text, 8),''));
     raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
 
     if task = 'system_indicators' then

@@ -145,8 +145,8 @@ begin
                 raise notice 'cannot take logarithm of a negative number, need to recalculate layer_min';
                 -- sometimes min_value in bivariate_axis_v2 gets outdated, so log(x-min(x)<0) may occur.
                 -- try to repair it by recalculating analytics
-                insert into task_queue (task_type, x_numerator_id, x_denominator_id, priority)
-                values ('analytics', x_numerator_uuid, x_denominator_uuid, 2.0)
+                insert into task_queue (task_type, x_numerator_id, x_denominator_id, priority, created_at)
+                values ('analytics', x_numerator_uuid, x_denominator_uuid, 2.0, now()-interval '1 day')
                 on conflict do nothing;
                 set task.rc = 1;
             else
