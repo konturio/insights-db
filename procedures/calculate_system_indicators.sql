@@ -32,18 +32,24 @@ begin
             where b.indicator_uuid = one_uuid and b.h3 = a.h3
           )
     )
-    insert into stat_h3_transposed (h3, indicator_uuid, indicator_value)
-    select
-        h3,
-        one_uuid,
-        1.
-    from missing_polygons
-    union all
-    select
-        h3,
-        area_km2_uuid,
-        ST_Area(h3_cell_to_boundary_geography(h3)) / 1000000.0
-    from missing_polygons;
+    merge into stat_h3_transposed st
+    using (
+        select
+            h3,
+            one_uuid,
+            1.
+        from missing_polygons
+        union all
+        select
+            h3,
+            area_km2_uuid,
+            ST_Area(h3_cell_to_boundary_geography(h3)) / 1000000.0
+        from missing_polygons
+    ) as m(h3, indicator_uuid, indicator_value)
+    on st.h3 = m.h3 and st.indicator_uuid = m.indicator_uuid
+    when not matched then
+        insert (h3, indicator_uuid, indicator_value)
+        values (m.h3, m.indicator_uuid, m.indicator_value);
 
     get diagnostics rows_inserted = row_count;
     if rows_inserted > 0 then
