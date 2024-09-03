@@ -24,9 +24,8 @@ begin
     end if;
 
     -- bivariate_axis_v2.min is floor() of minimal value of all hexagons for all resolutions.
-    -- we take minimum at all resolutions so log(x-min+epsilon) doesn't break for any x for any resolution on front.
-    -- bivariate_axis_v2.mean_value and stddev_value are from 8 resolution - as further calculations are performed on 8 res only
-    select min, mean_value, stddev_value into layer_min, layer_mean, layer_stddev from bivariate_axis_v2
+    -- all further calculations are also performed on hexes of all resolutions
+    select min, mean_all_res, stddev_all_res into layer_min, layer_mean, layer_stddev from bivariate_axis_v2
     where numerator_uuid = x_numerator_uuid and denominator_uuid = x_denominator_uuid;
 
     with hist_bounds(p, new_stddev, new_mean) as (
@@ -39,13 +38,11 @@ begin
             select h3, indicator_value
             from stat_h3_transposed
             where indicator_uuid = x_numerator_uuid
-              and h3_get_resolution(h3) = 8
             order by indicator_uuid, h3) numerator
         join (
             select h3, indicator_value
             from stat_h3_transposed
             where indicator_uuid = x_denominator_uuid
-              and h3_get_resolution(h3) = 8
             order by indicator_uuid, h3) denominator using(h3),
         lateral (
             select numerator.indicator_value / nullif(denominator.indicator_value, 0) as m
