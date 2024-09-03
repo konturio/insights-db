@@ -87,7 +87,7 @@ begin
                         from '|| tmp_axis_sql ||'
                         group by rollup (r)
                         order by r),
-         stops as (select stats s from statistics where r is null),
+         all_res_stats as (select stats s from statistics where r is null),
          quality as (select key,
                             avg(value) filter (where r = 8) as value,
                             case
@@ -116,15 +116,17 @@ begin
         median_value   = (j -> ''p50'' ->> 0)::double precision,
         median_quality = (j -> ''p50'' ->> 1)::double precision,
         mean_value     = (j -> ''mean'' ->> 0)::double precision,
-        mean_quality   = (j -> ''mean'' ->> 1)::double precision ' ||
+        mean_quality   = (j -> ''mean'' ->> 1)::double precision,
+        mean_all_res   = (all_res_stats.s ->> ''mean'')::double precision,
+        stddev_all_res = (all_res_stats.s ->> ''stddev'')::double precision ' ||
             case when skip_stops then ''
             else ',
-        min = floor((stops.s ->> ''min'')::double precision),
-        p25 = (stops.s ->> ''p33'')::double precision,
-        p75 = (stops.s ->> ''p66'')::double precision,
-        max = ceil((stops.s ->> ''max'')::double precision) '
+        min = floor((all_res_stats.s ->> ''min'')::double precision),
+        p25 = (all_res_stats.s ->> ''p33'')::double precision,
+        p75 = (all_res_stats.s ->> ''p66'')::double precision,
+        max = ceil((all_res_stats.s ->> ''max'')::double precision) '
             end ||
-    'from upd, stops
+    'from upd, all_res_stats
     where ba.numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
       and ba.denominator_uuid = '|| quote_literal(x_denominator_uuid);
 end;

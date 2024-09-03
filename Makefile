@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 .PHONY: all
-all: task_scheduler remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop geometry
+all: task_scheduler remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop geometry reporting
 
 
 .PHONY: insights_tasks_loop
@@ -20,6 +20,10 @@ apply_overrides_loop:
 .PHONY: remove_outated_indicators_loop
 remove_outated_indicators_loop:
 	while true; do psql -1 -tf scripts/remove_outated_indicators.sql; sleep 5m; done
+
+.PHONY: reporting
+reporting:
+	while true; do psql -qtf scripts/reporting.sql; sleep 45m; done
 
 .PHONY: geometry
 geometry:
