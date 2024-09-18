@@ -52,7 +52,7 @@ begin
         select
             x,
             sign(x) * sqrt(abs(x)) sqrt_x,
-            sign(x) * pow(abs(x), 1/3.) cube_root_x,
+            cbrt(x) cube_root_x,
             log10(x - layer_min + 1) log_x,
             log10(x - layer_min + 2.220446049250313e-16::double precision) log_epsilon_x,
             low,
@@ -132,7 +132,12 @@ begin
         default_transform = t.default_transform - 'points'
     from
         upd u,
-        (select to_jsonb(r) default_transform from stats r order by abs(skew) limit 1) t
+        (
+            select to_jsonb(r) default_transform
+            from stats r
+            order by abs(skew), case transformation when 'no' then 0 else 1 end
+            limit 1
+        ) t
     where ba.numerator_uuid = x_numerator_uuid
       and ba.denominator_uuid = x_denominator_uuid;
 
