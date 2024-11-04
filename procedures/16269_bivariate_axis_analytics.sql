@@ -121,10 +121,10 @@ begin
         stddev_all_res = (all_res_stats.s ->> ''stddev'')::double precision ' ||
             case when skip_stops then ''
             else ',
-        min = floor((all_res_stats.s ->> ''min'')::double precision),
+        min = (all_res_stats.s ->> ''min'')::double precision,
         p25 = (all_res_stats.s ->> ''p33'')::double precision,
         p75 = (all_res_stats.s ->> ''p66'')::double precision,
-        max = ceil((all_res_stats.s ->> ''max'')::double precision) '
+        max = (all_res_stats.s ->> ''max'')::double precision '
             end ||
     'from upd, all_res_stats
     where ba.numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
