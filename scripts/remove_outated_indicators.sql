@@ -1,5 +1,3 @@
-set synchronous_commit to off;
-
 delete from stat_h3_transposed t
 using bivariate_indicators_metadata b
 where t.indicator_uuid = b.internal_id and state = 'OUTDATED';

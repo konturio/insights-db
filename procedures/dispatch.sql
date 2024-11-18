@@ -135,7 +135,7 @@ begin
 
     select count(0) into indicator_count
     from bivariate_indicators_metadata
-    where internal_id = indicator_uuid and state != 'OUTDATED';
+    where internal_id = indicator_uuid and state != 'OUTDATED' and state != 'COPY IN PROGRESS';
 
     if indicator_count = 0 then
         raise notice '[%] cancelled task because indicator % no longer active', pg_backend_pid(), indicator_uuid;
