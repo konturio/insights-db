@@ -23,7 +23,7 @@ remove_outated_indicators_loop:
 
 .PHONY: remove_failed_upload_loop
 remove_failed_upload_loop:
-	while true; do psql -tf scripts/remove_failed_upload_loop.sql; sleep 4m; done
+	while true; do psql -tf scripts/remove_failed_upload.sql; sleep 4m; done
 
 .PHONY: reporting
 reporting:
