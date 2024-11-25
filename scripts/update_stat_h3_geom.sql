@@ -5,6 +5,7 @@ SELECT t.h3,
 FROM (
     SELECT DISTINCT h3 FROM stat_h3_transposed
     where indicator_uuid in (select internal_id from bivariate_indicators_metadata where date > now() - interval '2 days')
+      and h3_get_resolution(h3) <= 8
     order by h3
 ) t
 WHERE NOT exists (SELECT FROM stat_h3_geom g WHERE g.h3 = t.h3)
