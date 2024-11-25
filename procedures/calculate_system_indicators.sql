@@ -27,6 +27,7 @@ begin
         select h3
         from stat_h3_transposed a
         where a.indicator_uuid = x_numerator_uuid
+          and h3_get_resolution(h3) <= 8
           and not exists (
             select from stat_h3_transposed b
             where b.indicator_uuid = one_uuid and b.h3 = a.h3

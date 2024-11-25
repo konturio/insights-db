@@ -23,6 +23,14 @@ begin
         return;
     end if;
 
+    if 0.5 > (select coalesce(quality,1) from bivariate_axis_v2 ba
+                where ba.numerator_uuid = x_numerator_uuid
+                  and ba.denominator_uuid = x_denominator_uuid) then
+        -- no need to find transformation for low quality axis
+        return;
+    end if;
+
+
     -- bivariate_axis_v2.min is floor() of minimal value of all hexagons for all resolutions.
     -- all further calculations are also performed on hexes of all resolutions
     select min, mean_all_res, stddev_all_res into layer_min, layer_mean, layer_stddev from bivariate_axis_v2
