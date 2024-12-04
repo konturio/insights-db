@@ -43,7 +43,8 @@ single_indicator_tasks as (
     from indicator_list,
     (values
         --(0., 'check_new_indicator'), -- task is disabled currently
-        (0., 'system_indicators') -- should have higher priority than analytics and transformations
+        (0., 'system_indicators'), -- should have higher priority than analytics and transformations
+        (5., 'max_resolution')
     ) tasks (priority, task_type)
 )
 
