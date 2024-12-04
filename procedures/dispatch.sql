@@ -102,6 +102,8 @@ begin
         --   call check_new_indicator(x_num);
         when 'system_indicators' then
           call calculate_system_indicators(x_num);
+        when 'max_resolution' then
+          call find_max_resolution(x_num);
         when 'quality' then
           call direct_quality_estimation(x_num, x_den);
         when 'analytics' then
