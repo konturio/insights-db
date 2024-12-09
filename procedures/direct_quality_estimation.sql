@@ -35,11 +35,10 @@ begin
         cte_sql := '
         with averages_num as (
             select h3_cell_to_parent(h3) as h3_parent,
-                   avg(indicator_value)  as agg_value
+                   sum(indicator_value)/7  as agg_value
             from stat_h3_transposed
             where indicator_uuid = '|| quote_literal(x_numerator_uuid) ||'
               and h3_get_resolution(h3) between 1 and 5
-              and indicator_value != 0
             group by h3_parent
             order by h3_parent),
         stat as (
@@ -55,19 +54,17 @@ begin
         cte_sql := '
         with averages_num as (
             select h3_cell_to_parent(h3) as h3_parent,
-            avg(indicator_value)  as agg_value
+            sum(indicator_value)/7  as agg_value
             from stat_h3_transposed
             where indicator_uuid = '|| quote_literal(x_numerator_uuid) ||'
               and h3_get_resolution(h3) between 1 and 5
-              and indicator_value != 0
             group by h3_parent),
         averages_den as (
             select h3_cell_to_parent(h3) as h3_parent,
-                   avg(indicator_value)  as agg_value
+                   sum(indicator_value)/7  as agg_value
             from stat_h3_transposed
             where indicator_uuid = '|| quote_literal(x_denominator_uuid) ||'
               and h3_get_resolution(h3) between 1 and 5
-              and indicator_value != 0
             group by h3_parent),
         -- 2. join actual indicator values and average values from prev. step
         stat as (
@@ -102,5 +99,21 @@ begin
              from stat), 0)
     where numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
       and denominator_uuid = '|| quote_literal(x_denominator_uuid);
+
+    if x_denominator_uuid in (area_km2_uuid, one_uuid) then
+        update bivariate_indicators_metadata m
+        set downscale = (
+            select case when a.quality>b.quality then 'proportional' else 'equal' end
+            from bivariate_axis_v2 a
+            join bivariate_axis_v2 b on (
+                a.numerator_uuid = x_numerator_uuid and
+                a.numerator_uuid = b.numerator_uuid and
+                a.denominator_uuid = area_km2_uuid and
+                b.denominator_uuid = one_uuid
+            )
+        )
+        where internal_id = x_numerator_uuid;
+    end if;
+
 end;
 $$;
