@@ -51,7 +51,8 @@ begin
                    b.children_sum / 7 / nullif('||agg_den_value||', 0) as agg_norm_value_via_sum,
                    b.children_avg / nullif('||agg_den_value||', 0) as agg_norm_value_via_avg
             from stat_h3_transposed a
-            join averages_num b on (a.indicator_uuid = '|| quote_literal(x_numerator_uuid) ||' and a.h3 = b.h3_parent))';
+            join averages_num b on (a.indicator_uuid = '|| quote_literal(x_numerator_uuid) ||' and a.h3 = b.h3_parent)),
+        fill_stat(fill_quality) as (select 1.0::float)';
 
     else
         -- 1. for hexagons of resolution 1..5 group values by common parent hexagon and calculate the average inside a parent
@@ -88,7 +89,12 @@ begin
               and a.h3 = c.h3
               and a.h3 = d.h3_parent
               and a.indicator_uuid = '|| quote_literal(x_numerator_uuid) ||'
-              and c.indicator_uuid = '|| quote_literal(x_denominator_uuid) ||')';
+              and c.indicator_uuid = '|| quote_literal(x_denominator_uuid) ||'),
+        fill_stat(fill_quality) as (
+            -- does the denominator cover all of the cells where numerator is present?
+            select (count(*) filter (where numerator_value != 0 and denominator_value != 0))::float
+                / nullif((count(*) filter (where numerator_value != 0)), 0)
+            from stat)';
     end if;
 
     -- 3. now compare aggregated values with the real values inside these hexagons.
@@ -119,11 +125,7 @@ begin
             1.0::float - avg(
                 abs(numerator_value - numerator_children_sum)
                 / nullif(abs(numerator_value) + abs(numerator_children_sum), 0))
-        ) numerator_quality_via_sum,
-
-        -- does the denominator cover all of the cells where numerator is present?
-        (count(*) filter (where numerator_value != 0 and denominator_value != 0))::float
-            / nullif((count(*) filter (where numerator_value != 0)), 0) fill_quality
+        ) numerator_quality_via_sum
         from stat
     )
     update bivariate_axis_v2
@@ -132,7 +134,7 @@ begin
                 case when numerator_quality_via_avg > numerator_quality_via_sum then
                     zoom_quality_via_avg else zoom_quality_via_sum end
                 * fill_quality,
-                0) from metrics)
+                0) from metrics, fill_stat)
     where numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
       and denominator_uuid = '|| quote_literal(x_denominator_uuid);
 
