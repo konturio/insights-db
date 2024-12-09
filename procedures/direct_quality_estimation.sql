@@ -35,7 +35,8 @@ begin
         cte_sql := '
         with averages_num as (
             select h3_cell_to_parent(h3) as h3_parent,
-                   sum(indicator_value)/7  as agg_value
+                   sum(indicator_value) as children_sum,
+                   avg(indicator_value) as children_avg
             from stat_h3_transposed
             where indicator_uuid = '|| quote_literal(x_numerator_uuid) ||'
               and h3_get_resolution(h3) between 1 and 5
@@ -44,8 +45,11 @@ begin
         stat as (
             select a.indicator_value as numerator_value,
                    '||den_value||'  as denominator_value,
+                   b.children_sum numerator_children_sum,
+                   b.children_avg numerator_children_avg,
                    a.indicator_value / nullif('||den_value||', 0) as actual_norm_value,
-                   b.agg_value / nullif('||agg_den_value||', 0) as agg_norm_value
+                   b.children_sum / 7 / nullif('||agg_den_value||', 0) as agg_norm_value_via_sum,
+                   b.children_avg / nullif('||agg_den_value||', 0) as agg_norm_value_via_avg
             from stat_h3_transposed a
             join averages_num b on (a.indicator_uuid = '|| quote_literal(x_numerator_uuid) ||' and a.h3 = b.h3_parent))';
 
@@ -54,7 +58,8 @@ begin
         cte_sql := '
         with averages_num as (
             select h3_cell_to_parent(h3) as h3_parent,
-            sum(indicator_value)/7  as agg_value
+            sum(indicator_value) as children_sum,
+            avg(indicator_value) as children_avg
             from stat_h3_transposed
             where indicator_uuid = '|| quote_literal(x_numerator_uuid) ||'
               and h3_get_resolution(h3) between 1 and 5
@@ -70,8 +75,11 @@ begin
         stat as (
             select a.indicator_value as numerator_value,
                    c.indicator_value as denominator_value,
+                   b.children_sum numerator_children_sum,
+                   b.children_avg numerator_children_avg,
                    a.indicator_value / nullif(c.indicator_value, 0) as actual_norm_value,
-                   b.agg_value / nullif(d.agg_value, 0) as agg_norm_value
+                   b.children_sum / 7 / nullif(d.agg_value, 0) as agg_norm_value_via_sum,
+                   b.children_avg / nullif(d.agg_value, 0) as agg_norm_value_via_avg
             from stat_h3_transposed a,
                  averages_num b,
                  stat_h3_transposed c,
@@ -87,16 +95,44 @@ begin
     -- The greater the similarity among values, the higher the resulting quality.
     -- Also, less gaps in denominator = better quality.
     -- 0 means the worst quality, 1 -- the best.
-    execute cte_sql || '
+    execute cte_sql || ',
+    metrics as ( select
+        -- for axis, if we zoom in one step, will current zoom values be the same as next zoom values?
+        (
+            1.0::float - avg(
+                abs(actual_norm_value - agg_norm_value_via_avg)
+                / nullif(abs(actual_norm_value) + abs(agg_norm_value_via_avg), 0))
+        ) zoom_quality_via_avg,
+        (
+            1.0::float - avg(
+                abs(actual_norm_value - agg_norm_value_via_sum)
+                / nullif(abs(actual_norm_value) + abs(agg_norm_value_via_sum), 0))
+        ) zoom_quality_via_sum,
+
+        -- only for numerator, how is the indicator (more likely) was constructed: via sum or avg?
+        (
+            1.0::float - avg(
+                abs(numerator_value - numerator_children_avg)
+                / nullif(abs(numerator_value) + abs(numerator_children_avg), 0))
+        ) numerator_quality_via_avg,
+        (
+            1.0::float - avg(
+                abs(numerator_value - numerator_children_sum)
+                / nullif(abs(numerator_value) + abs(numerator_children_sum), 0))
+        ) numerator_quality_via_sum,
+
+        -- does the denominator cover all of the cells where numerator is present?
+        (count(*) filter (where numerator_value != 0 and denominator_value != 0))::float
+            / nullif((count(*) filter (where numerator_value != 0)), 0) fill_quality
+        from stat
+    )
     update bivariate_axis_v2
     set quality =
-            coalesce((select (1.0::float - avg(
-                -- if we zoom in one step, will current zoom values be the same as next zoom values?
-                abs(actual_norm_value - agg_norm_value) / nullif(abs(actual_norm_value) + abs(agg_norm_value), 0)))
-                -- does the denominator cover all of the cells where numerator is present?
-                * (count(*) filter (where numerator_value != 0 and denominator_value != 0))::float
-                / nullif((count(*) filter (where numerator_value != 0)), 0) as quality
-             from stat), 0)
+        (select coalesce(
+                case when numerator_quality_via_avg > numerator_quality_via_sum then
+                    zoom_quality_via_avg else zoom_quality_via_sum end
+                * fill_quality,
+                0) from metrics)
     where numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
       and denominator_uuid = '|| quote_literal(x_denominator_uuid);
 
