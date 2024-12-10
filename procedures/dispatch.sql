@@ -1,6 +1,6 @@
 create or replace procedure dispatch()
     language plpgsql
-    set work_mem = '10GB'
+    set work_mem = '13GB'
 as
 $$
 declare
