@@ -17,7 +17,7 @@ with indicators_to_update as (
         select internal_id
         from bivariate_indicators_metadata
         where
-                state != 'OUTDATED' and state != 'COPY IN PROGRESS'
+                state != 'OUTDATED' and state != 'TMP CREATED' and state != 'COPY IN PROGRESS'
             and external_id in (
                 select external_id
                 from bivariate_indicators_metadata

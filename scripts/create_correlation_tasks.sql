@@ -11,14 +11,14 @@ with new_corr_axis as (
         b.denominator_uuid y_denominator_uuid   -- base
     from bivariate_axis_v2 a
         join bivariate_indicators_metadata xnum
-            on (a.numerator_uuid = xnum.internal_id and not xnum.is_base and xnum.state != 'OUTDATED' and xnum.state != 'COPY IN PROGRESS')
+            on (a.numerator_uuid = xnum.internal_id and not xnum.is_base and xnum.state != 'OUTDATED' and xnum.state != 'TMP CREATED' and xnum.state != 'COPY IN PROGRESS')
         join bivariate_indicators_metadata xden
-            on (a.denominator_uuid = xden.internal_id and xden.state != 'OUTDATED' and xden.state != 'COPY IN PROGRESS'),
+            on (a.denominator_uuid = xden.internal_id and xden.state != 'OUTDATED' and xden.state != 'TMP CREATED' and xden.state != 'COPY IN PROGRESS'),
     bivariate_axis_v2 b
         join bivariate_indicators_metadata ynum
-            on (b.numerator_uuid = ynum.internal_id and ynum.state != 'OUTDATED' and ynum.state != 'COPY IN PROGRESS')
+            on (b.numerator_uuid = ynum.internal_id and ynum.state != 'OUTDATED' and ynum.state != 'TMP CREATED' and ynum.state != 'COPY IN PROGRESS')
         join bivariate_indicators_metadata yden
-            on (b.denominator_uuid = yden.internal_id and yden.state != 'OUTDATED' and yden.state != 'COPY IN PROGRESS')
+            on (b.denominator_uuid = yden.internal_id and yden.state != 'OUTDATED' and yden.state != 'TMP CREATED' and yden.state != 'COPY IN PROGRESS')
     where
             a.quality > .5
         and b.quality > .5

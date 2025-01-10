@@ -21,7 +21,7 @@ begin
     select internal_id into prev_version
     from bivariate_indicators_metadata
     where external_id = external_uuid and internal_id != x_numerator_uuid and date < upload_date
-      and state != 'OUTDATED' and state != 'COPY IN PROGRESS'
+      and state != 'OUTDATED' and state != 'TMP CREATED' and state != 'COPY IN PROGRESS'
     order by date
     limit 1;
 

@@ -14,8 +14,8 @@ with new_axis as (
         b.internal_id denominator_uuid
     from bivariate_indicators_metadata a
     join bivariate_indicators_metadata b on
-            b.state != 'OUTDATED' and b.state != 'COPY IN PROGRESS'
-        and a.state != 'OUTDATED' and a.state != 'COPY IN PROGRESS'
+            b.state != 'OUTDATED' and b.state != 'TMP CREATED' and b.state != 'COPY IN PROGRESS'
+        and a.state != 'OUTDATED' and a.state != 'TMP CREATED' and a.state != 'COPY IN PROGRESS'
         and a.external_id != b.external_id
         and b.is_base
     on conflict (numerator_uuid, denominator_uuid)

@@ -28,9 +28,11 @@ begin
         case task_type
             -- better to remove obsolete tasks earlier to reduce queue
             when 'remove_outdated_tasks' then 0
+            -- absolutely prioritize indicator uploading tasks
+            when 'copy' then 5
             -- correlations should be calculated after any other tasks
-            when 'correlations' then 2
-            else 1
+            when 'correlations' then 20
+            else 10
         end,
         -- sort by timestamp so that older indicators are calculated earlier
         created_at,
@@ -100,6 +102,8 @@ begin
         -- simultaneous threads with check_new_indicator block each other terribly. task disabled until locks are fixed
         -- when 'check_new_indicator' then
         --   call check_new_indicator(x_num);
+        when 'copy' then
+          call copy_indicator(x_num);
         when 'system_indicators' then
           call calculate_system_indicators(x_num);
         when 'max_resolution' then
