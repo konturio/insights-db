@@ -4,4 +4,4 @@ where internal_id in (
     select internal_id from bivariate_indicators_metadata
     where state = 'COPY IN PROGRESS' and date < now() - interval '1m'
     for no key update skip locked)
-returning 'delete', param_id, state, internal_id, 'ext.id=', external_id;
+returning 'delete failed upload', param_id, state, internal_id, 'ext.id=', external_id;
