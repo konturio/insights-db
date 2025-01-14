@@ -138,7 +138,8 @@ begin
     where numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
       and denominator_uuid = '|| quote_literal(x_denominator_uuid);
 
-    if x_denominator_uuid in (area_km2_uuid, one_uuid) then
+    if x_denominator_uuid in (area_km2_uuid, one_uuid) and
+            (select downscale from bivariate_indicators_metadata where internal_id = x_numerator_uuid) is null then
         update bivariate_indicators_metadata m
         set downscale = (
             select case when a.quality>b.quality then 'proportional' else 'equal' end
