@@ -21,7 +21,7 @@ begin
     where owner = 'disaster.ninja' and param_id = 'one';
 
     select internal_id into population_uuid from bivariate_indicators_metadata
-    where owner = 'disaster.ninja' and param_id = 'population' order by date desc limit 1;
+    where owner = 'disaster.ninja' and param_id = 'population' and state = 'READY' order by date desc limit 1;
 
     if x_numerator_uuid in (area_km2_uuid, one_uuid) then
         -- we don't need such axis
@@ -30,8 +30,8 @@ begin
 
     -- skip stops calculations if there's overrides for min, p25, p75, max
     if exists (select from bivariate_axis_overrides
-               where numerator_id = x_numerator_uuid
-                 and denominator_id = x_denominator_uuid
+               where numerator_id = (select external_id from bivariate_indicators_metadata where internal_id = x_numerator_uuid)
+                 and denominator_id = (select external_id from bivariate_indicators_metadata where internal_id = x_denominator_uuid)
                  and min is not null
                  and p25 is not null
                  and p75 is not null
