@@ -22,9 +22,12 @@ with new_axis as (
         do nothing
     returning numerator_uuid, denominator_uuid
 ),
--- select distinct indicators included in axis
+-- select distinct NEW indicators included in axis
 indicator_list as (
-    select distinct numerator_uuid indicator_uuid from new_axis
+    select distinct numerator_uuid indicator_uuid
+    from new_axis
+    join bivariate_indicators_metadata on (numerator_uuid = internal_id)
+    where state = 'NEW'
 ),
 -- create set of tasks for each new axis
 tasks as (

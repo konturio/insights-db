@@ -28,8 +28,6 @@ begin
         case task_type
             -- better to remove obsolete tasks earlier to reduce queue
             when 'remove_outdated_tasks' then 0
-            -- absolutely prioritize indicator uploading tasks
-            when 'copy' then 5
             -- correlations should be calculated after any other tasks
             when 'correlations' then 20
             else 10
