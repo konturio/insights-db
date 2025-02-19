@@ -81,19 +81,17 @@ begin
                    a.indicator_value / nullif(c.indicator_value, 0) as actual_norm_value,
                    b.children_sum / 7 / nullif(d.agg_value, 0) as agg_norm_value_via_sum,
                    b.children_avg / nullif(d.agg_value, 0) as agg_norm_value_via_avg
-            from stat_h3_transposed a,
-                 averages_num b,
-                 stat_h3_transposed c,
-                 averages_den d
-            where a.h3 = b.h3_parent
-              and a.h3 = c.h3
-              and a.h3 = d.h3_parent
-              and a.indicator_uuid = '|| quote_literal(x_numerator_uuid) ||'
-              and c.indicator_uuid = '|| quote_literal(x_denominator_uuid) ||'),
+            from stat_h3_transposed a
+            join averages_num b on (a.h3 = b.h3_parent)
+            left join stat_h3_transposed c on (
+                a.h3 = c.h3 and
+                c.indicator_uuid = '|| quote_literal(x_denominator_uuid) ||')
+            left join averages_den d on (a.h3 = d.h3_parent)
+            where a.indicator_uuid = '|| quote_literal(x_numerator_uuid) || '),
         fill_stat(fill_quality) as (
             -- does the denominator cover all of the cells where numerator is present?
-            select (count(*) filter (where numerator_value != 0 and denominator_value != 0))::float
-                / nullif((count(*) filter (where numerator_value != 0)), 0)
+            select (count(*) filter (where denominator_value is not null))::float
+                / nullif(count(*), 0)::float
             from stat)';
     end if;
 
