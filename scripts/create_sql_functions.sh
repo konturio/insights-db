@@ -14,6 +14,7 @@ read -r -d '' migrate_cmd << EOF
          -qf procedures/check_new_indicator.sql
          -qf procedures/copy_indicator.sql
          -qf scripts/add_system_indicators_metadata.sql
+         -qf procedures/mk_log.sql
 EOF
 
 while ! pg_isready -q; do

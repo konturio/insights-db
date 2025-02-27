@@ -45,7 +45,7 @@ on conflict do nothing;
 
 get diagnostics rows_inserted = row_count;
 if rows_inserted > 0 then
-    raise notice 'created % correlation tasks', rows_inserted;
+    raise info using message = mk_log(format('created %s correlation tasks', rows_inserted));
 end if;
 
 end $$;

@@ -91,7 +91,7 @@ begin
     end if;
 
     select count(0) from to_correlate into task_count;
-    raise notice 'run correlation for % tuples', task_count;
+    raise info using message = mk_log(format('run correlation for %s tuples', task_count));
 
     execute get_correlation_sql(A, B, C, D) using A, B, C, D;
 
