@@ -26,7 +26,7 @@ begin
     limit 1;
 
     if prev_version is null then
-        raise notice 'no prev version found for %', x_numerator_uuid;
+        raise info using message = mk_log(format('no prev version found for %s', x_numerator_uuid));
         return;
     end if;
 
@@ -38,10 +38,10 @@ begin
     from (select h3, indicator_value from stat_h3_transposed where indicator_uuid = x_numerator_uuid order by h3) a
     full join (select h3, indicator_value from stat_h3_transposed where indicator_uuid = prev_version order by h3) b using(h3);
 
-    raise notice '% has prev version %: regr slope %, intercept %, fill_ratio %', x_numerator_uuid, prev_version, slope, intercept, fill_ratio;
+    raise info using message = mk_log(format('%s has prev version %s: regr slope %s, intercept %s, fill_ratio %s', x_numerator_uuid, prev_version, slope, intercept, fill_ratio));
 
     if slope between 0.999 and 1.001 and intercept between -0.01 and 0.01 and fill_ratio between 0.99 and 1.01 then
-        raise notice 'discarding % indicator and all related tasks', x_numerator_uuid;
+        raise info using message = mk_log(format('discarding %s indicator and all related tasks', x_numerator_uuid));
 
         delete from task_queue
         where x_numerator_id = x_numerator_uuid or x_denominator_id = x_numerator_uuid or y_numerator_id = x_numerator_uuid or y_denominator_id = x_numerator_uuid;
@@ -50,7 +50,7 @@ begin
         set state = 'OUTDATED'
         where internal_id = x_numerator_uuid;
     else
-        raise notice 'indicator % stays in db', x_numerator_uuid;
+        raise info using message = mk_log(format('indicator %s stays in db', x_numerator_uuid));
     end if;
 
 end;

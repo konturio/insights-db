@@ -34,7 +34,7 @@ set
     state = case state when 'READY' then 'OUTDATED' else 'READY' end
 where
     internal_id in (select internal_id from indicators_to_update)
-returning 'status change', param_id, state, internal_id;
+returning mk_log('status change'), param_id, state, internal_id, 'remaining_tasks='||(select count(0) from task_queue where x_numerator_id = internal_id) remaining_tasks;
 
 -- now there might be duplicated indicators in state READY, need to outdate oldest of them
 update bivariate_indicators_metadata
@@ -48,7 +48,7 @@ where
         where state = 'READY'
         order by external_id, date desc
     )
-returning 'status change', param_id, state, internal_id;
+returning mk_log('status change'), param_id, state, internal_id, 'remaining_tasks='||(select count(0) from task_queue where x_numerator_id = internal_id) remaining_tasks;
 
 -- tell dispatcher to remove tasks related to outdated indicators
 insert into task_queue

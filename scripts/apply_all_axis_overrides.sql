@@ -22,8 +22,6 @@ where
     a.denominator_uuid = den.internal_id;
 
 get diagnostics rows_updated = row_count;
-if rows_updated > 0 then
-    raise notice 'overrides applied for % indicators', rows_updated;
-end if;
+raise info using message = mk_log(format('overrides applied for %s indicators', rows_updated));
 
 end $$;

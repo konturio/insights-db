@@ -152,7 +152,7 @@ begin
     exception
         when data_exception then
             if sqlerrm like '%logarithm of a negative number%' then
-                raise notice 'cannot take logarithm of a negative number, need to recalculate layer_min';
+                raise warning using message = mk_log('cannot take logarithm of a negative number, need to recalculate layer_min');
                 -- sometimes min_value in bivariate_axis_v2 gets outdated, so log(x-min(x)<0) may occur.
                 -- try to repair it by recalculating analytics
                 insert into task_queue (task_type, x_numerator_id, x_denominator_id, priority, created_at)

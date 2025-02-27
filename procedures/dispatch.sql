@@ -45,7 +45,7 @@ begin
     end if;
 
     execute 'set application_name to ' || quote_literal('insights-db ' || coalesce(task, '') || ' ' || coalesce(left(x_num::text,8),'') || ' ' || coalesce(left(x_den::text, 8),''));
-    raise notice '[%] start % task tid=% for %, %, %, %', pg_backend_pid(), task, task_id, x_num, x_den, y_num, y_den;
+    raise info using message = mk_log(format('start %s task tid=%s for %s, %s, %s, %s', task, task_id, x_num, x_den, y_num, y_den));
 
     if task = 'system_indicators' then
         -- only 1 'system_indicators' task should be executed at a time to avoid unnecessary computations.
@@ -69,7 +69,7 @@ begin
             for update skip locked
         );
         delete from task_queue where ctid = task_id;
-        raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
+        raise info using message = mk_log(format('end %s task tid=%s time=%s', task, task_id, date_trunc('second', clock_timestamp() - t)));
         return;
 
     elsif task = 'analytics' then
@@ -115,13 +115,13 @@ begin
         when 'correlations' then
           call update_correlation(x_num, x_den, y_num, y_den);
         else
-          raise notice 'unknown task type %', task;
+          raise warning using message = mk_log(format('unknown task type %s', task));
     end case;
 
     execute 'show task.rc' into rc;
     if rc = '0' then
         delete from task_queue where ctid = task_id;
-        raise notice '[%] end % task tid=% time=%', pg_backend_pid(), task, task_id, date_trunc('second', clock_timestamp() - t);
+        raise info using message = mk_log(format('end %s task tid=%s time=%s', task, task_id, date_trunc('second', clock_timestamp() - t)));
     end if;
     -- if rc != 0, task stays in db to recalculate it later
 end;
@@ -142,7 +142,7 @@ begin
     where internal_id = indicator_uuid and state != 'OUTDATED' and state != 'COPY IN PROGRESS';
 
     if indicator_count = 0 then
-        raise notice '[%] cancelled task because indicator % no longer active', pg_backend_pid(), indicator_uuid;
+        raise notice using message = mk_log(format('cancelled task because indicator %s no longer active', indicator_uuid));
     end if;
 
     return indicator_count = 0;
