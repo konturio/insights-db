@@ -9,6 +9,6 @@ while true; do
         sleep 120
         continue
     fi
-    seq `psql -c 'select count(0) from task_queue' -t` | parallel -j ${MAX_PARALLEL_TASKS:=3} -n0 'psql -q -c "set statement_timeout='\''1h'\''" -c "call dispatch()"'
+    seq `psql -c 'select count(0) from task_queue' -t` | parallel -j ${MAX_PARALLEL_TASKS:=3} -n0 "psql -q -c 'set statement_timeout=\"${TASK_TIMEOUT:-1h}\"' -c 'call dispatch()'"
     sleep 10
 done
