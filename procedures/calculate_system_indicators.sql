@@ -23,16 +23,22 @@ begin
         return;
     end if;
 
-    with missing_polygons as (
+    create temp table missing_polygons as
+    with num as (
         select h3
-        from stat_h3_transposed a
-        where a.indicator_uuid = x_numerator_uuid
+        from stat_h3_transposed
+        where indicator_uuid = x_numerator_uuid
           and h3_get_resolution(h3) <= 8
-          and not exists (
-            select from stat_h3_transposed b
-            where b.indicator_uuid = one_uuid and b.h3 = a.h3
-          )
-    )
+        order by h3),
+    den as (
+        select h3
+        from stat_h3_transposed
+        where indicator_uuid = one_uuid
+        order by h3)
+    select * from num
+    except
+    select * from den;
+    
     merge into stat_h3_transposed st
     using (
         select
@@ -40,22 +46,30 @@ begin
             one_uuid,
             1.
         from missing_polygons
-        union all
+    ) as m(h3, indicator_uuid, indicator_value)
+    on st.h3 = m.h3 and st.indicator_uuid = one_uuid
+    when not matched then
+        insert (h3, indicator_uuid, indicator_value)
+        values (m.h3, m.indicator_uuid, m.indicator_value);
+
+    get diagnostics rows_inserted = row_count;
+    raise info using message = mk_log(format('inserted %s rows of one', rows_inserted));
+
+    merge into stat_h3_transposed st
+    using (
         select
             h3,
             area_km2_uuid,
             ST_Area(h3_cell_to_boundary_geography(h3)) / 1000000.0
         from missing_polygons
     ) as m(h3, indicator_uuid, indicator_value)
-    on st.h3 = m.h3 and st.indicator_uuid = m.indicator_uuid
+    on st.h3 = m.h3 and st.indicator_uuid = area_km2_uuid
     when not matched then
         insert (h3, indicator_uuid, indicator_value)
         values (m.h3, m.indicator_uuid, m.indicator_value);
 
     get diagnostics rows_inserted = row_count;
-    if rows_inserted > 0 then
-        raise info using message = mk_log(format('inserted %s rows', rows_inserted));
-    end if;
+    raise info using message = mk_log(format('inserted %s rows of area', rows_inserted));
 
 end;
 $$;
