@@ -5,7 +5,7 @@ create or replace procedure copy_indicator(x_numerator_uuid uuid)
 as
 $$
 declare
-    rows_inserted integer;
+    rows_inserted bigint;
     tmp_table text;
     indicator_name text;
 begin

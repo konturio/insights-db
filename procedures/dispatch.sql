@@ -1,6 +1,7 @@
 create or replace procedure dispatch()
     language plpgsql
     set work_mem = '13GB'
+    set enable_hashagg = 'off'
 as
 $$
 declare
