@@ -146,7 +146,7 @@ begin
             bivariate_axis_v2 a,
             bivariate_axis_v2 b            
         where m.internal_id = x_numerator_uuid and
-              m.downscale is null
+              m.downscale is null and
               a.numerator_uuid = x_numerator_uuid and 
               b.numerator_uuid = x_numerator_uuid and
               a.denominator_uuid = area_km2_uuid and
