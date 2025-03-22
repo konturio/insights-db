@@ -30,7 +30,7 @@ begin
             agg_den_value := 'h3_get_hexagon_area_avg(h3_get_resolution(h3)+1)';
         when one_uuid then
             den_value := '1.';
-            agg_den_value := den_value;
+            agg_den_value := '1.';
         end case;
         cte_sql := '
         with averages_num as (
@@ -47,9 +47,9 @@ begin
                    '||den_value||'  as denominator_value,
                    b.children_sum numerator_children_sum,
                    b.children_avg numerator_children_avg,
-                   a.indicator_value / nullif('||den_value||', 0) as actual_norm_value,
-                   b.children_sum / 7 / nullif('||agg_den_value||', 0) as agg_norm_value_via_sum,
-                   b.children_avg / nullif('||agg_den_value||', 0) as agg_norm_value_via_avg
+                   a.indicator_value / '||den_value||' as actual_norm_value,
+                   b.children_sum / 7 / '||agg_den_value||' as agg_norm_value_via_sum,
+                   b.children_avg / '||agg_den_value||' as agg_norm_value_via_avg
             from stat_h3_transposed a
             join averages_num b on (a.indicator_uuid = '|| quote_literal(x_numerator_uuid) ||' and a.h3 = b.h3_parent)),
         fill_stat(fill_quality) as (select 1.0::float)';
@@ -87,7 +87,8 @@ begin
                 a.h3 = c.h3 and
                 c.indicator_uuid = '|| quote_literal(x_denominator_uuid) ||')
             left join averages_den d on (a.h3 = d.h3_parent)
-            where a.indicator_uuid = '|| quote_literal(x_numerator_uuid) || '),
+            where h3_get_resolution(a.h3) between 1 and 5
+                and a.indicator_uuid = '|| quote_literal(x_numerator_uuid) || ')
         fill_stat(fill_quality) as (
             -- does the denominator cover all of the cells where numerator is present?
             select (count(*) filter (where denominator_value is not null))::float
@@ -136,21 +137,19 @@ begin
     where numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
       and denominator_uuid = '|| quote_literal(x_denominator_uuid);
 
-    if x_denominator_uuid in (area_km2_uuid, one_uuid) and
-            (select downscale from bivariate_indicators_metadata where internal_id = x_numerator_uuid) is null then
+    if x_denominator_uuid in (area_km2_uuid, one_uuid)            
+        -- do not use left join here - normal join ensures that if we don't have value
         update bivariate_indicators_metadata m
-        set downscale = (
-            select case when a.quality>b.quality then 'proportional' else 'equal' end
-            from bivariate_axis_v2 a
-            join bivariate_axis_v2 b on (
-                a.numerator_uuid = x_numerator_uuid and
-                a.numerator_uuid = b.numerator_uuid and
-                a.denominator_uuid = area_km2_uuid and
-                b.denominator_uuid = one_uuid
-            )
-        )
-        where internal_id = x_numerator_uuid;
+        set downscale = case when a.quality > b.quality then 'proportional' else 'equal' end
+        from
+            bivariate_axis_v2 a,
+            bivariate_axis_v2 b            
+        where m.internal_id = x_numerator_uuid and        
+              a.numerator_uuid = x_numerator_uuid and 
+              b.numerator_uuid = x_numerator_uuid and
+              a.denominator_uuid = area_km2_uuid and
+              b.denominator_uuid = one_uuid and
+              and downscale is null;
     end if;
-
 end;
 $$;
