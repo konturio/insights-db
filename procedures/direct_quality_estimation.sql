@@ -137,7 +137,7 @@ begin
     where numerator_uuid = '|| quote_literal(x_numerator_uuid) ||'
       and denominator_uuid = '|| quote_literal(x_denominator_uuid);
 
-    if x_denominator_uuid in (area_km2_uuid, one_uuid)            
+    if x_denominator_uuid in (area_km2_uuid, one_uuid) then
         -- do not use left join here - normal join ensures that if we don't have value 
         -- we will not compare with null but rather perform the update after the second side is calculated.
         update bivariate_indicators_metadata m
