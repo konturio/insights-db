@@ -88,7 +88,7 @@ begin
                 c.indicator_uuid = '|| quote_literal(x_denominator_uuid) ||')
             left join averages_den d on (a.h3 = d.h3_parent)
             where h3_get_resolution(a.h3) between 1 and 5
-                and a.indicator_uuid = '|| quote_literal(x_numerator_uuid) || ')
+                and a.indicator_uuid = '|| quote_literal(x_numerator_uuid) || '),
         fill_stat(fill_quality) as (
             -- does the denominator cover all of the cells where numerator is present?
             select (count(*) filter (where denominator_value is not null))::float

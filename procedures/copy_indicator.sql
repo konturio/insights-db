@@ -14,7 +14,7 @@ begin
     from bivariate_indicators_metadata
     where internal_id = x_numerator_uuid;
 
-    execute 'insert into stat_h3_transposed select distinct on (h3) * from "' || tmp_table || '" order by h3';
+    execute 'insert into stat_h3_transposed select distinct on (h3_get_resolution(h3), h3) * from "' || tmp_table || '" order by h3_get_resolution(h3), h3';
 
     get diagnostics rows_inserted = row_count;
     if rows_inserted > 0 then
