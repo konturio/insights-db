@@ -138,7 +138,8 @@ begin
       and denominator_uuid = '|| quote_literal(x_denominator_uuid);
 
     if x_denominator_uuid in (area_km2_uuid, one_uuid)            
-        -- do not use left join here - normal join ensures that if we don't have value
+        -- do not use left join here - normal join ensures that if we don't have value 
+        -- we will not compare with null but rather perform the update after the second side is calculated.
         update bivariate_indicators_metadata m
         set downscale = case when a.quality > b.quality then 'proportional' else 'equal' end
         from
