@@ -145,12 +145,12 @@ begin
         from
             bivariate_axis_v2 a,
             bivariate_axis_v2 b            
-        where m.internal_id = x_numerator_uuid and        
+        where m.internal_id = x_numerator_uuid and
+              m.downscale is null
               a.numerator_uuid = x_numerator_uuid and 
               b.numerator_uuid = x_numerator_uuid and
               a.denominator_uuid = area_km2_uuid and
-              b.denominator_uuid = one_uuid and
-              and downscale is null;
+              b.denominator_uuid = one_uuid;              
     end if;
 end;
 $$;
