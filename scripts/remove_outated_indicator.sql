@@ -1,11 +1,10 @@
-select mk_log('removing outdated indicators from stat_h3_transposed');
+select mk_log('removing outdated indicator from stat_h3_transposed');
 
 delete from stat_h3_transposed t
-using bivariate_indicators_metadata b
-where t.indicator_uuid = b.internal_id and state = 'OUTDATED';
+where t.indicator_uuid = :indicator_id;
 
 delete from bivariate_indicators_metadata
-where state = 'OUTDATED'
+where internal_id = :indicator_id
 returning mk_log('delete indicator'), param_id, state, internal_id, 'ext.id=', external_id;
 -- due to FK constraint outdated indicators will also be removed from
 -- bivariate_axis_correlation_v2 & bivariate_axis_v2
