@@ -19,7 +19,12 @@ apply_overrides_loop:
 
 .PHONY: remove_outated_indicators_loop
 remove_outated_indicators_loop:
-	while true; do psql -1 -tf scripts/remove_outated_indicators.sql; sleep 5m; done
+	while true; do \
+		psql -Xtc "select internal_id from bivariate_indicators_metadata where state = 'OUTDATED';" | \
+		awk 'NF' | tr -d ' ' | \
+		parallel 'psql -1 -t -f scripts/remove_outated_indicator.sql -v indicator_id={}'; \
+		sleep 5m; \
+	done
 
 .PHONY: remove_failed_upload_loop
 remove_failed_upload_loop:
