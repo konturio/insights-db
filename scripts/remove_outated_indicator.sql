@@ -1,4 +1,4 @@
-select mk_log('removing outdated indicator from stat_h3_transposed');
+select mk_log('removing outdated indicator from stat_h3_transposed: ' || :'indicator_id');
 
 delete from stat_h3_transposed t
 where t.indicator_uuid = :'indicator_id';
