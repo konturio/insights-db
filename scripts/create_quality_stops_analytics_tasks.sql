@@ -1,8 +1,4 @@
-do $$
-declare
-    rows_inserted integer;
-begin
-
+create temp table new_tasks as
 -- compose bivariate axis to store tasks results
 with new_axis as (
     insert into bivariate_axis_v2
@@ -30,7 +26,7 @@ indicator_list as (
     where state = 'NEW'
 ),
 -- create set of tasks for each new axis
-tasks as (
+tasks(priority, task_type, x_numerator_id, x_denominator_id) as (
     select priority, task_type, numerator_uuid, denominator_uuid
     -- priority is important for task dependencies: task that should wait for other tasks should have lower priority.
     -- example: 'transformations' (priority 4) requires 'analytics' result (priority 2), so 'transformations' has lower priority
@@ -41,7 +37,7 @@ tasks as (
     ) tasks (priority, task_type)
 ),
 -- create tasks for each new indicator
-single_indicator_tasks as (
+single_indicator_tasks(priority, task_type, x_numerator_id, x_denominator_id) as (
     select priority, task_type, indicator_uuid, null::uuid
     from indicator_list,
     (values
@@ -49,18 +45,32 @@ single_indicator_tasks as (
         (0., 'system_indicators'), -- should have higher priority than analytics and transformations
         (5., 'max_resolution')
     ) tasks (priority, task_type)
+),
+created_tasks as (
+    insert into task_queue
+        (priority, task_type, x_numerator_id, x_denominator_id)
+    select * from tasks
+    union all
+    select * from single_indicator_tasks
+    on conflict do nothing
+    returning priority, task_type, x_numerator_id, x_denominator_id
 )
+select * from created_tasks;
 
-insert into task_queue
-    (priority, task_type, x_numerator_id, x_denominator_id)
-select * from tasks
-union all
-select * from single_indicator_tasks
-on conflict do nothing;
+select mk_log('new tasks for indicator '||x_numerator_id), count(0) from new_tasks group by x_numerator_id;
 
-get diagnostics rows_inserted = row_count;
-if rows_inserted > 0 then
-    raise info using message = mk_log(format('created %s tasks', rows_inserted));
-end if;
+do $$
+declare
+    declare partition text;
+begin
+
+for partition in
+        with m as (select distinct x_numerator_id from new_tasks)
+        select distinct 'stat_h3_transposed_p'||i
+        from generate_series(0,255) i, m
+        where satisfies_hash_partition((SELECT oid FROM pg_class WHERE relname = 'stat_h3_transposed'), 256, i, m.x_numerator_id)
+    loop
+        execute 'analyze verbose ' || partition; 
+    end loop;
 
 end $$;
