@@ -61,7 +61,7 @@ select mk_log('new tasks for indicator '||x_numerator_id), count(0) from new_tas
 
 do $$
 declare
-    declare partition text;
+    partition text;
 begin
 
 for partition in
