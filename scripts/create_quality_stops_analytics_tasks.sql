@@ -65,7 +65,11 @@ declare
 begin
 
 for partition in
-        with m as (select distinct x_numerator_id from new_tasks)
+        with m as (select distinct x_numerator_id from new_tasks
+            where exists (
+                select from bivariate_indicators_metadata
+                where internal_id = x_numerator_id and state = 'NEW'
+            ))
         select distinct 'stat_h3_transposed_p'||i
         from generate_series(0,255) i, m
         where satisfies_hash_partition((SELECT oid FROM pg_class WHERE relname = 'stat_h3_transposed'), 256, i, m.x_numerator_id)
