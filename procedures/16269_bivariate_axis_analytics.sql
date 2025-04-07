@@ -82,7 +82,7 @@ begin
                                 jsonb_object(
                                     '|| quote_literal(percentiles_keys) ||',
                                     (percentile_cont('|| quote_literal(percentiles) ||'::float[]) within group (order by m)' ||
-                                        case when skip_stops or population_uuid = x_numerator_uuid then '' else ' filter (where p is not null) ' end || ')::text[]
+                                        case when skip_stops or population_uuid = x_numerator_uuid or population_uuid is null then '' else ' filter (where p is not null) ' end || ')::text[]
                                 ) as stats
                         from '|| tmp_axis_sql ||'
                         group by rollup (r)

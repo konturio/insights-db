@@ -29,5 +29,8 @@ begin
 
     execute 'drop table "' || tmp_table || '"';
 
+    exception
+        when undefined_table then
+            raise warning using message = mk_log('source table not found! task will be removed');
 end;
 $$;

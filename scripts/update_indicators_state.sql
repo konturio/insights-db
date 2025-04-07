@@ -25,12 +25,12 @@ with indicators_to_update as (
                         state = 'NEW'
                     and internal_id not in (select indicator_uuid from indicators_with_important_tasks)
             )
+            and internal_id not in (select indicator_uuid from indicators_with_important_tasks)
 )
 
 -- for selected indicator versions change state READY -> OUTDATED, NEW -> READY
 update bivariate_indicators_metadata
 set
-    last_updated = current_timestamp at time zone 'utc',
     state = case state when 'READY' then 'OUTDATED' else 'READY' end
 where
     internal_id in (select internal_id from indicators_to_update)
