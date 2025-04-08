@@ -74,7 +74,7 @@ for partition in
         from generate_series(0,255) i, m
         where satisfies_hash_partition((SELECT oid FROM pg_class WHERE relname = 'stat_h3_transposed'), 256, i, m.x_numerator_id)
     loop
-        execute 'analyze verbose ' || partition; 
+        execute 'analyze (verbose, skip_locked) ' || partition; 
     end loop;
 
 end $$;
