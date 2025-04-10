@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 .PHONY: all
-all: task_scheduler remove_failed_upload_loop remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop geometry reporting
+all: task_scheduler remove_failed_upload_loop monitor_pg_stats_loop remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop geometry reporting
 
 
 .PHONY: insights_tasks_loop
@@ -12,6 +12,10 @@ insights_tasks_loop:
 .PHONY: task_scheduler
 task_scheduler:
 	$(SHELL) scripts/create_tasks.sh
+
+.PHONY: monitor_pg_stats_loop
+monitor_pg_stats_loop:
+	$(SHELL) scripts/monitor_pg_stats_loop.sh
 
 .PHONY: apply_overrides_loop
 apply_overrides_loop:
