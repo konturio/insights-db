@@ -23,7 +23,8 @@ with indicators_to_update as (
                 from bivariate_indicators_metadata
                 where
                         state = 'NEW'
-                    and internal_id not in (select indicator_uuid from indicators_with_important_tasks)
+                    and internal_id not in (select indicator_uuid from indicators_with_important_tasks) -- ensures no more tasks exist
+                    and exists (select from bivariate_axis_v2 where numerator_uuid = internal_id) -- ensures tasks were created in the past
             )
             and internal_id not in (select indicator_uuid from indicators_with_important_tasks)
 )
