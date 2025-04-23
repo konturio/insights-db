@@ -14,11 +14,3 @@ delete from bivariate_axis_overrides o
 where not exists (select from bivariate_indicators_metadata m where m.external_id = o.numerator_id)
    or not exists (select from bivariate_indicators_metadata m where m.external_id = o.denominator_id)
 returning mk_log('delete indicator override'), numerator_id, denominator_id;
-
--- clean up obsolete overlays
-delete from bivariate_overlays_v2 o
-where not exists (select from bivariate_indicators_metadata m where m.external_id = o.x_numerator_id)
-   or not exists (select from bivariate_indicators_metadata m where m.external_id = o.x_denominator_id)
-   or not exists (select from bivariate_indicators_metadata m where m.external_id = o.y_numerator_id)
-   or not exists (select from bivariate_indicators_metadata m where m.external_id = o.y_denominator_id)
-returning mk_log('delete preset'), name;
