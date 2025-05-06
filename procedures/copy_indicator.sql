@@ -19,13 +19,17 @@ begin
     get diagnostics rows_inserted = row_count;
     if rows_inserted > 0 then
         raise info using message = mk_log(format('inserted new indicator %s: %s rows', indicator_name, rows_inserted));
-    else
-        raise warning using message = mk_log(format('new indicator %s is empty!', indicator_name));
-    end if;
 
-    update bivariate_indicators_metadata
-    set state = 'NEW'
-    where internal_id = x_numerator_uuid;
+        update bivariate_indicators_metadata
+        set state = 'NEW'
+        where internal_id = x_numerator_uuid;
+    else
+        raise warning using message = mk_log(format('new indicator %s is empty! will not insert', indicator_name));
+
+        update bivariate_indicators_metadata
+        set state = 'OUTDATED'
+        where internal_id = x_numerator_uuid;
+    end if;
 
     execute 'drop table "' || tmp_table || '"';
 
