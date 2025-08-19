@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 .PHONY: all
-all: task_scheduler remove_failed_upload_loop monitor_pg_stats_loop remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop geometry reporting
+all: task_scheduler remove_failed_upload_loop monitor_pg_stats_loop remove_outated_indicators_loop insights_tasks_loop apply_overrides_loop reindex_btree_loop geometry reporting
 
 
 .PHONY: insights_tasks_loop
@@ -24,6 +24,10 @@ apply_overrides_loop:
 .PHONY: remove_outated_indicators_loop
 remove_outated_indicators_loop:
 	$(SHELL) scripts/remove_outated_indicators.sh
+
+.PHONY: reindex_btree_loop
+reindex_btree_loop:
+	$(SHELL) scripts/reindex-bloated-btrees.sh
 
 .PHONY: remove_failed_upload_loop
 remove_failed_upload_loop:
