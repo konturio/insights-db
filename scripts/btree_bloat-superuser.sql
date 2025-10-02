@@ -25,7 +25,7 @@
 -- below is modified version of https://github.com/ioguix/pgsql-bloat-estimation/blob/master/btree/btree_bloat-superuser.sql
 -- it returns names of the tables that have bloated btree indexes (>50%)
 
-SELECT
+SELECT DISTINCT
   tblname
 FROM (
   SELECT coalesce(1 +
@@ -102,4 +102,4 @@ FROM (
   ) AS rows_hdr_pdg_stats
 ) AS relation_stats
 WHERE 100 * (relpages-est_pages_ff)::float / relpages > 50 -- bloat_pct
-ORDER BY idxname
+ORDER BY 1

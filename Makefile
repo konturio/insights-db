@@ -27,6 +27,7 @@ remove_outated_indicators_loop:
 
 .PHONY: reindex_btree_loop
 reindex_btree_loop:
+	psql -qf scripts/drop_invalid_indexes.sql
 	$(SHELL) scripts/reindex-bloated-btrees.sh
 
 .PHONY: remove_failed_upload_loop
